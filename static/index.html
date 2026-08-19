@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TOEIC 750 형용사·부사 550 마스터 | 스마트 학습기</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Modular CSS Files -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/header.css">
+  <link rel="stylesheet" href="css/login.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/vocabs.css">
+  <link rel="stylesheet" href="css/flashcards.css">
+  <link rel="stylesheet" href="css/quiz.css">
+  <link rel="stylesheet" href="css/modal.css">
+</head>
+<body class="dark-theme">
+
+  <!-- 🔒 FULLSCREEN LOGIN / REGISTRATION OVERLAY SCREEN -->
+  <div id="login-screen" class="login-backdrop">
+    <div class="login-card">
+      <div class="login-header">
+        <span class="logo-badge">TOEIC 750 Master</span>
+        <h2 class="login-title">스마트 학습기</h2>
+        <p class="login-sub">학습 계정으로 로그인하여 나만의 진도율과 오답 노트를 관리하세요.</p>
+      </div>
+
+      <div class="login-tabs">
+        <button id="tab-login-mode" class="login-tab-btn active">🔓 기존 학습자 로그인</button>
+        <button id="tab-reg-mode" class="login-tab-btn">➕ 새 학습자 회원가입</button>
+      </div>
+
+      <!-- 1. Existing User Login Form -->
+      <div id="form-login-mode" class="auth-form">
+        <div class="form-group">
+          <label for="auth-user-select">학습자 계정 선택</label>
+          <select id="auth-user-select" class="auth-select"></select>
+        </div>
+        <button id="btn-submit-login" class="primary-btn lg">학습 시작하기 🚀</button>
+      </div>
+
+      <!-- 2. New User Registration Form -->
+      <div id="form-reg-mode" class="auth-form hidden">
+        <div class="form-group">
+          <label for="auth-reg-name">학습자 성함 / 닉네임</label>
+          <input type="text" id="auth-reg-name" class="auth-input" placeholder="예: 홍길동, 김철수">
+        </div>
+        <button id="btn-submit-reg" class="primary-btn lg">회원가입 및 학습 시작 ✨</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- App Header / Navigation -->
+  <header class="app-header hidden">
+    <div class="header-container">
+      <div class="logo">
+        <span class="logo-badge">TOEIC 750</span>
+        <h1 class="logo-title">형용사·부사 550 <span>Master</span></h1>
+      </div>
+
+      <nav class="nav-tabs">
+        <button class="nav-btn active" data-tab="dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>대시보드</span>
+        </button>
+        <button class="nav-btn" data-tab="vocabs">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          <span>단어장 (550)</span>
+        </button>
+        <button class="nav-btn" data-tab="flashcards">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M7 15h10M7 9h6"></path></svg>
+          <span>플래시카드</span>
+        </button>
+        <button class="nav-btn" data-tab="quiz">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+          <span>실전 퀴즈</span>
+        </button>
+        <button class="nav-btn" data-tab="pairs">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"></path><path d="M4 20L21 3"></path><path d="M21 16v5h-5"></path><path d="M15 15l6 6"></path><path d="M4 4l5 5"></path></svg>
+          <span>형·부 세트 (136)</span>
+        </button>
+        <button class="nav-btn" data-tab="traps">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span>Part 5 함정</span>
+        </button>
+      </nav>
+
+      <div class="header-actions">
+        <!-- Logged In User Profile Badge -->
+        <div class="header-user-badge">
+          <span>👤 <strong id="header-user-name">학습자</strong> 님</span>
+        </div>
+
+        <button id="logout-btn" class="logout-btn" title="로그아웃">🚪 로그아웃</button>
+
+        <!-- TOEIC Accent Selector -->
+        <div class="accent-selector" title="토익 리스닝 억양 선택">
+          <span class="accent-label">🔊 억양:</span>
+          <div class="accent-pills" id="accent-pills">
+            <button class="accent-btn active" data-accent="en-us">🇺🇸 미국</button>
+            <button class="accent-btn" data-accent="en-gb">🇬🇧 영국</button>
+            <button class="accent-btn" data-accent="en-au">🇦🇺 호주</button>
+          </div>
+        </div>
+
+        <button id="theme-toggle" class="icon-btn" title="테마 변경">
+          <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="main-container hidden">
+
+    <!-- 1. DASHBOARD VIEW -->
+    <section id="view-dashboard" class="tab-view active">
+      <div class="hero-card">
+        <div class="hero-content">
+          <span class="tag">2025–2026 ETS 출제기준 완전 반영</span>
+          <h2>TOEIC 750 목표 달성<br><span id="dash-user-name">학습자</span> 님의 맞춤 진도율</h2>
+          <p>ETS 토익 Part 5/6 어휘 문제 및 Part 7 문맥 판단에 직결되는 필수 550개 어휘와 11개 빈출 함정 유형을 완벽 학습하세요.</p>
+          <div class="hero-buttons">
+            <button id="hero-btn-vocabs" class="primary-btn">단어장 학습 시작</button>
+            <button id="hero-btn-quiz" class="secondary-btn">실전 퀴즈 풀기</button>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div class="circular-progress-card">
+            <svg viewBox="0 0 100 100" class="progress-ring">
+              <circle class="ring-bg" cx="50" cy="50" r="42"/>
+              <circle class="ring-fill" id="overall-ring" cx="50" cy="50" r="42"/>
+            </svg>
+            <div class="progress-info">
+              <span id="overall-percent" class="percent-num">0%</span>
+              <span class="percent-label">전체 달성률</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stat Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon adj">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          </div>
+          <div class="stat-details">
+            <span class="stat-title">형용사 300</span>
+            <div class="stat-value"><span id="adj-done-count">0</span> / 300</div>
+            <div class="progress-bar-bg"><div id="adj-progress-bar" class="progress-bar-fill adj"></div></div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon adv">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
+          </div>
+          <div class="stat-details">
+            <span class="stat-title">부사 250</span>
+            <div class="stat-value"><span id="adv-done-count">0</span> / 250</div>
+            <div class="progress-bar-bg"><div id="adv-progress-bar" class="progress-bar-fill adv"></div></div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon prio">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </div>
+          <div class="stat-details">
+            <span class="stat-title">A등급 최우선어휘</span>
+            <div class="stat-value"><span id="prio-a-done">0</span> / 220</div>
+            <div class="progress-bar-bg"><div id="prio-a-bar" class="progress-bar-fill prio"></div></div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon streak">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          </div>
+          <div class="stat-details">
+            <span class="stat-title">개인 오답 노트</span>
+            <div class="stat-value"><span id="user-wrong-count">0</span> 개</div>
+            <span class="stat-sub text-muted">틀린 단어 모아보기</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Cards -->
+      <div class="dashboard-sections">
+        <div class="section-card">
+          <h3>🎯 750점 맞춤 학습 가이드</h3>
+          <ul class="guide-list">
+            <li><span class="badge badge-a">A등급 (220개)</span> <strong>최우선 암기</strong>: Part 5/6 품사 및 어휘 문제에서 빈출되는 절대 핵심 어휘</li>
+            <li><span class="badge badge-b">B등급 (192개)</span> <strong>주요 어휘</strong>: Part 5 선택지 구성 및 Part 7 패러프레이징 단어</li>
+            <li><span class="badge badge-c">C등급 (138개)</span> <strong>완성 어휘</strong>: 750점 안정적 확보를 위한 고난도 어휘 및 다의어</li>
+          </ul>
+        </div>
+        <div class="section-card">
+          <h3>⚡ 개인 맞춤 학습 모드</h3>
+          <div class="quick-grid">
+            <button class="quick-btn" data-action="fc-a">🔥 A등급 플래시카드</button>
+            <button class="quick-btn" data-action="fc-unlearned">📝 미암기 단어 플래시카드</button>
+            <button class="quick-btn" data-action="quiz-word">❓ 단어 뜻 맞추기 퀴즈</button>
+            <button class="quick-btn" data-action="quiz-wrong">📌 내 오답 노트 재시험</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- 2. VOCABULARY LIST VIEW -->
+    <section id="view-vocabs" class="tab-view">
+      <div class="controls-panel">
+        <div class="search-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="search-input" placeholder="단어, 뜻, 결합문형, 예문 검색...">
+          <button id="search-clear" class="clear-btn">&times;</button>
+        </div>
+
+        <div class="filter-group">
+          <!-- POS Filter -->
+          <div class="pill-filters" id="pos-filters">
+            <button class="filter-pill active" data-pos="all">전체 (550)</button>
+            <button class="filter-pill" data-pos="형용사">형용사 (300)</button>
+            <button class="filter-pill" data-pos="부사">부사 (250)</button>
+          </div>
+
+          <!-- Priority Filter -->
+          <div class="pill-filters" id="prio-filters">
+            <button class="filter-pill active" data-prio="all">전체 등급</button>
+            <button class="filter-pill badge-a" data-prio="A">A 등급</button>
+            <button class="filter-pill badge-b" data-prio="B">B 등급</button>
+            <button class="filter-pill badge-c" data-prio="C">C 등급</button>
+          </div>
+
+          <!-- Status Filter -->
+          <div class="pill-filters" id="status-filters">
+            <button class="filter-pill active" data-status="all">전체 상태</button>
+            <button class="filter-pill" data-status="unmemorized">미암기</button>
+            <button class="filter-pill" data-status="memorized">암기완료</button>
+            <button class="filter-pill" data-status="wrong_notebook">📌 내 오답노트</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Continuous Playback Toolbar -->
+      <div class="playlist-bar">
+        <div class="playlist-left">
+          <button id="auto-play-btn" class="playlist-play-btn">▶️ 연속 재생</button>
+          <button id="auto-pause-btn" class="playlist-pause-btn hidden">⏸️ 일시정지</button>
+          <button id="auto-reset-btn" class="playlist-reset-btn">⏹️ 1번부터</button>
+        </div>
+        
+        <div id="playlist-status" class="playlist-status hidden">
+          <span class="pulse-dot"></span>
+          <span id="playlist-status-text">재생 준비 중...</span>
+        </div>
+
+        <div class="playlist-right">
+          <div class="playlist-opt">
+            <label for="playlist-start-select" class="playlist-label">시작 위치:</label>
+            <select id="playlist-start-select" class="playlist-select">
+              <option value="0">1번 단어부터</option>
+            </select>
+          </div>
+
+          <div class="playlist-opt">
+            <label for="playlist-speed-select" class="playlist-label">⚡ 음성 재생 속도:</label>
+            <select id="playlist-speed-select" class="playlist-select">
+              <option value="0.8">0.8x (천천히)</option>
+              <option value="1.0" selected>1.0x (보통)</option>
+              <option value="1.25">1.25x (빠르게)</option>
+              <option value="1.5">1.5x (매우 빠르게)</option>
+              <option value="2.0">2.0x (2배속)</option>
+            </select>
+          </div>
+
+          <div class="playlist-opt">
+            <label for="playlist-gap-select" class="playlist-label">⏱️ 대기 간격:</label>
+            <select id="playlist-gap-select" class="playlist-select">
+              <option value="0.2">0.2초 (즉시)</option>
+              <option value="0.5">0.5초 (빠르게)</option>
+              <option value="1.0" selected>1.0초 (기본)</option>
+              <option value="1.5">1.5초 (여유있게)</option>
+              <option value="2.0">2.0초 (천천히)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="list-meta">
+        <span>검색 결과: <strong id="result-count">0</strong>개 단어</span>
+        <button id="reset-progress-btn" class="text-btn">학습 상태 초기화</button>
+      </div>
+
+      <!-- Vocab Grid -->
+      <div id="vocab-grid" class="vocab-grid"></div>
+    </section>
+
+
+    <!-- 3. FLASHCARD VIEW -->
+    <section id="view-flashcards" class="tab-view">
+      <div class="flashcard-container">
+        <div class="flashcard-controls">
+          <div class="fc-mode-selectors">
+            <label><input type="radio" name="fc-face" value="en" checked> 영어 우선 (뜻 숨기기)</label>
+            <label><input type="radio" name="fc-face" value="ko"> 한국어 우선 (단어 숨기기)</label>
+          </div>
+          <div class="fc-counter">
+            <span id="fc-current-idx">1</span> / <span id="fc-total-count">0</span>
+          </div>
+        </div>
+
+        <div id="flashcard-card" class="flashcard-3d">
+          <div class="fc-front">
+            <div class="fc-header">
+              <span id="fc-pos-badge" class="badge">형용사</span>
+              <span id="fc-prio-badge" class="badge badge-a">A등급</span>
+              <button id="fc-tts-btn" class="speech-btn" title="원어민 발음 듣기">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+              </button>
+            </div>
+            <div class="fc-main-text" id="fc-main-word">available</div>
+            <div class="fc-hint text-muted">클릭하여 뒤집기 🔄</div>
+          </div>
+
+          <div class="fc-back">
+            <div class="fc-header">
+              <span id="fc-back-meaning-title" class="fc-sub-title">뜻 & 상세정보</span>
+            </div>
+            <div class="fc-meaning" id="fc-meaning-text">이용 가능한, 시간이 되는</div>
+            
+            <div class="fc-details">
+              <div class="detail-row">
+                <strong>TOEIC 결합문형:</strong>
+                <span id="fc-collocation">be available for/to</span>
+              </div>
+              <div class="detail-row">
+                <strong>Part 5 함정 포인트:</strong>
+                <span id="fc-trap">명사 앞 또는 be동사/연결동사 뒤 자리인지 확인</span>
+              </div>
+              <div class="detail-row example-row">
+                <div class="example-title-bar">
+                  <strong>TOEIC 예문:</strong>
+                  <button id="fc-example-tts-btn" class="speech-btn sm" title="예문 원어민 음성 듣기">🔊 예문 듣기</button>
+                </div>
+                <p id="fc-example-en" class="example-en">The conference room is available for staff meetings.</p>
+                <p id="fc-example-ko" class="example-ko">회의실은 직원 회의에 이용 가능합니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flashcard-actions">
+          <button id="fc-prev-btn" class="action-btn">⬅️ 이전</button>
+          <button id="fc-unmemorized-btn" class="action-btn retry">❌ 아직 안 외움</button>
+          <button id="fc-memorized-btn" class="action-btn pass">✅ 암기 완료!</button>
+          <button id="fc-next-btn" class="action-btn">다음 ➡️</button>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- 4. QUIZ VIEW -->
+    <section id="view-quiz" class="tab-view">
+      <div class="quiz-container">
+        <div id="quiz-setup" class="quiz-box">
+          <h2>🎯 TOEIC 750 실전 퀴즈</h2>
+          <p>학습한 형용사·부사 단어와 예문 빈칸 문제로 실전을 테스트하세요.</p>
+          
+          <div class="quiz-options">
+            <div class="opt-group">
+              <label>퀴즈 유형</label>
+              <select id="quiz-type-select">
+                <option value="meaning">단어 보고 뜻 맞추기 (객관식 4선)</option>
+                <option value="word">뜻 보고 영어 단어 맞추기 (객관식 4선)</option>
+                <option value="blank">Part 5 예문 빈칸 채우기 (실전형)</option>
+                <option value="wrong">🔥 내 오답 노트 재시험 모드</option>
+              </select>
+            </div>
+
+            <div class="opt-group">
+              <label>문제 수</label>
+              <select id="quiz-count-select">
+                <option value="10">10 문제</option>
+                <option value="20" selected>20 문제</option>
+                <option value="30">30 문제</option>
+              </select>
+            </div>
+
+            <div class="opt-group">
+              <label>대상 등급</label>
+              <select id="quiz-prio-select">
+                <option value="all">전체 (A+B+C)</option>
+                <option value="A">A 등급 (핵심 어휘)</option>
+                <option value="B">B 등급 (주요 어휘)</option>
+                <option value="C">C 등급 (완성 어휘)</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="start-quiz-btn" class="primary-btn lg">퀴즈 시작 🚀</button>
+        </div>
+
+        <!-- Active Quiz Box -->
+        <div id="quiz-active" class="quiz-box hidden">
+          <div class="quiz-header">
+            <span class="quiz-progress-label">문제 <strong id="q-curr-num">1</strong> / <span id="q-total-num">10</span></span>
+            <div class="quiz-timer-badge">정답률: <span id="q-live-score">100%</span></div>
+          </div>
+
+          <div class="quiz-question-card">
+            <span id="q-category-tag" class="tag">형용사 · A등급</span>
+            <h3 id="q-question-text">available</h3>
+            <p id="q-question-sub" class="text-muted"></p>
+          </div>
+
+          <div id="q-options-container" class="options-grid"></div>
+
+          <div id="q-explanation-box" class="explanation-box hidden">
+            <div id="q-result-badge" class="result-badge">정답입니다! 🎉</div>
+            <div class="exp-content">
+              <p><strong>단어:</strong> <span id="exp-word"></span> (<span id="exp-meaning"></span>)</p>
+              <p><strong>결합문형:</strong> <span id="exp-collocation"></span></p>
+              <p><strong>Part 5 포인트:</strong> <span id="exp-trap"></span></p>
+              <p><strong>예문:</strong> <span id="exp-example"></span></p>
+            </div>
+            <button id="q-next-btn" class="primary-btn">다음 문제 ➡️</button>
+          </div>
+        </div>
+
+        <!-- Quiz Result Box -->
+        <div id="quiz-result" class="quiz-box hidden">
+          <h2>🎉 퀴즈 결과 리포트</h2>
+          <div class="result-score-circle">
+            <span id="final-score-percent">85%</span>
+            <span class="score-sub"><span id="final-correct-count">17</span> / <span id="final-total-count">20</span> 문제 정답</span>
+          </div>
+
+          <div id="wrong-answers-section" class="wrong-section hidden">
+            <h3>📌 내 오답 노트에 추가된 단어</h3>
+            <div id="wrong-list" class="wrong-list"></div>
+          </div>
+
+          <div class="result-actions">
+            <button id="quiz-retry-btn" class="primary-btn">다시 풀기 🔄</button>
+            <button id="quiz-dash-btn" class="secondary-btn">대시보드로 이동</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- 5. PAIRS VIEW -->
+    <section id="view-pairs" class="tab-view">
+      <div class="section-intro">
+        <h2>🔗 형용사 - 부사 짝 어휘 세트 (136세트)</h2>
+        <p>토익 Part 5에서는 형용사와 부사가 유사한 철자로 파생된 세트 어휘가 빈출됩니다. 짝을 맞춰 효율적으로 암기하세요.</p>
+      </div>
+      <div id="pairs-grid" class="pairs-grid"></div>
+    </section>
+
+
+    <!-- 6. TRAPS VIEW -->
+    <section id="view-traps" class="tab-view">
+      <div class="section-intro">
+        <h2>⚠️ TOEIC Part 5 빈출 함정 11가지 완전 정리</h2>
+        <p>ETS 시험에서 가장 오답률이 높은 11가지 어휘/품사 함정 유형과 핵심 판별법입니다.</p>
+      </div>
+      <div id="traps-grid" class="traps-grid"></div>
+    </section>
+
+  </main>
+
+  <!-- Word Detail Modal -->
+  <div id="detail-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <button id="modal-close-btn" class="modal-close">&times;</button>
+      <div class="modal-header">
+        <span id="modal-pos" class="badge">형용사</span>
+        <span id="modal-prio" class="badge badge-a">A등급</span>
+        <span id="modal-topic" class="tag">일반 업무</span>
+        <button id="modal-tts-btn" class="speech-btn" title="원어민 발음 듣기">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <h2 id="modal-word">available</h2>
+        <h3 id="modal-meaning">이용 가능한, 시간이 되는</h3>
+
+        <div class="modal-section">
+          <h4>🔗 TOEIC 결합 / 문형</h4>
+          <p id="modal-collocation" class="highlight-box"></p>
+        </div>
+
+        <div class="modal-section">
+          <h4>⚠️ Part 5 출제 함정 포인트</h4>
+          <p id="modal-trap" class="warning-box"></p>
+        </div>
+
+        <div class="modal-section">
+          <div class="example-title-bar">
+            <h4>📝 TOEIC 예문 및 한글 해석</h4>
+            <button id="modal-example-tts-btn" class="speech-btn sm" title="예문 원어민 음성 듣기">🔊 예문 듣기</button>
+          </div>
+          <div class="example-box">
+            <p id="modal-example-en" class="example-en"></p>
+            <p id="modal-example-ko" class="example-ko"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="modal-toggle-mem-btn" class="primary-btn">암기 상태 변경</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modular JS Files -->
+  <script src="js/state.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/vocabs.js"></script>
+  <script src="js/autoPlayer.js"></script>
+  <script src="js/flashcards.js"></script>
+  <script src="js/quiz.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

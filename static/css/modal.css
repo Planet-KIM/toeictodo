@@ -1,0 +1,92 @@
+/* ==========================================================================
+   Modal CSS - Word Detail Popup Overlay
+   ========================================================================== */
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-lg);
+  max-width: 550px;
+  width: 100%;
+  padding: 30px;
+  position: relative;
+  box-shadow: var(--shadow-card);
+}
+
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.modal-body h2 { font-size: 2.2rem; margin-bottom: 4px; }
+.modal-body h3 { font-size: 1.2rem; color: var(--accent-secondary); margin-bottom: 20px; }
+
+.modal-section { margin-bottom: 16px; }
+.modal-section h4 { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+
+.highlight-box {
+  background: rgba(99, 102, 241, 0.15);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--accent-primary);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.warning-box {
+  background: rgba(245, 158, 11, 0.15);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--color-b);
+  font-size: 0.9rem;
+}
+
+.example-box {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 14px;
+  border-radius: var(--radius-sm);
+}
+
+.example-en { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+.example-ko { font-size: 0.88rem; color: var(--text-secondary); }
+
+.modal-footer { margin-top: 24px; }
+
+/* Responsive Adjustments */
+@media (max-width: 900px) {
+  .header-container { flex-direction: column; align-items: flex-start; }
+  .header-actions { width: 100%; justify-content: space-between; }
+  .nav-tabs { width: 100%; overflow-x: auto; }
+  .hero-card { flex-direction: column; text-align: center; }
+  .dashboard-sections { grid-template-columns: 1fr; }
+  .options-grid { grid-template-columns: 1fr; }
+  .flashcard-actions { grid-template-columns: 1fr 1fr; }
+}
