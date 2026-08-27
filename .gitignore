@@ -34,7 +34,17 @@ toeic.db
 *.db
 *.sqlite3
 
-# Non-code Course Assets & PDFs (Exclude heavy raw pdf/mp3 files from git repository)
+# Audio Cache & Media Files (Exclude heavy audio files & caches from git)
+static/audio_cache/
+audio_cache/
+*.mp3
+*.wav
+*.m4a
+*.aac
+*.ogg
+*.flac
+
+# Non-code Course Assets & PDFs
 *.pdf
 *.pptx
 ETS mp3/
