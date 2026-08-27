@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Vocabs Module - Vocabulary Grid, Filtering & Pairs/Traps Rendering
+   Vocabs Module - Vocabulary Grid, Filtering & Offline Sync Integration
    ========================================================================== */
 
 function getFilteredWords() {
@@ -106,6 +106,22 @@ function setupFilters() {
       renderVocabs();
     }
   });
+
+  // Download Audio Pack Handler
+  const downloadAudioBtn = document.getElementById('download-audio-pack-btn');
+  if (downloadAudioBtn) {
+    downloadAudioBtn.addEventListener('click', () => {
+      const originalText = downloadAudioBtn.textContent;
+      downloadAudioBtn.disabled = true;
+      downloadOfflineAudioPack((completed, total, percent) => {
+        downloadAudioBtn.textContent = `📲 [${percent}%] (${completed}/${total})`;
+        if (percent === 100) {
+          downloadAudioBtn.disabled = false;
+          downloadAudioBtn.textContent = '✅ 오프라인 음성 준비 완료';
+        }
+      });
+    });
+  }
 }
 
 function renderVocabs() {
@@ -193,15 +209,20 @@ async function toggleMemorized(id) {
   updateDashboard();
   renderVocabs();
 
-  // Async DB sync per user
-  try {
-    await fetch(`/api/users/${state.currentUserId}/progress`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ word_id: id, is_memorized: isMem, toggle: true })
-    });
-  } catch (e) {
-    console.error('Failed to sync progress with DB:', e);
+  // Save to mobile IndexedDB locally
+  await saveLocalProgress(state.currentUserId, id, isMem);
+
+  // Sync with server if online
+  if (navigator.onLine) {
+    try {
+      await fetch(`/api/users/${state.currentUserId}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word_id: id, is_memorized: isMem, toggle: true })
+      });
+    } catch (e) {
+      console.warn('Network unavailable, progress saved locally to IndexedDB.');
+    }
   }
 }
 

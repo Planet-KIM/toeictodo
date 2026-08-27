@@ -1,9 +1,11 @@
 /* ==========================================================================
-   Main Entrypoint Module - App Initialization & Auth Management
+   Main Entrypoint Module - ServiceWorker, Offline DB & App Initialization
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
+  registerServiceWorker();
+  setupOnlineAutoSync();
   setupAccentSelector();
   setupNavigation();
   setupDashboardQuickButtons();
@@ -21,6 +23,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderTraps();
 });
 
+// PWA ServiceWorker Registration (iOS Safari & Android Chrome)
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      console.log('[SW] PWA ServiceWorker registered with scope:', reg.scope);
+    }).catch((err) => {
+      console.warn('[SW] ServiceWorker registration failed:', err);
+    });
+  }
+}
+
 // Theme Initialization (Dark / Light Mode)
 function initTheme() {
   const themeToggle = document.getElementById('theme-toggle');
@@ -37,7 +50,7 @@ function initTheme() {
   }
 }
 
-// Fetch Core Words, Pairs, Traps
+// Fetch Core Words, Pairs, Traps with Offline Cache Fallback
 async function loadData() {
   try {
     const [wordsRes, pairsRes, trapsRes] = await Promise.all([
@@ -52,7 +65,7 @@ async function loadData() {
 
     console.log(`[Main] Loaded ${state.allWords.length} words, ${state.allPairs.length} pairs, ${state.allTraps.length} traps.`);
   } catch (err) {
-    console.error('[Main] Failed to load data:', err);
+    console.warn('[Main] Network offline, relying on PWA cached data.');
   }
 }
 
@@ -62,17 +75,24 @@ async function switchUserProfile(userId) {
   state.currentUserName = user.name;
 
   try {
-    // Fetch User Scoped Progress & Wrong Words from DB
-    const [progressRes, wrongRes] = await Promise.all([
-      fetch(`/api/users/${userId}/progress`),
-      fetch(`/api/users/${userId}/wrong-words`)
-    ]);
+    if (navigator.onLine) {
+      // Fetch User Scoped Progress & Wrong Words from Backend DB
+      const [progressRes, wrongRes] = await Promise.all([
+        fetch(`/api/users/${userId}/progress`),
+        fetch(`/api/users/${userId}/wrong-words`)
+      ]);
 
-    const progressData = await progressRes.json();
-    state.wrongWords = await wrongRes.json();
+      const progressData = await progressRes.json();
+      state.wrongWords = await wrongRes.json();
 
-    state.memorizedIds = new Set(progressData.memorized_ids || []);
-    state.reviewCounts = progressData.review_counts || {};
+      state.memorizedIds = new Set(progressData.memorized_ids || []);
+      state.reviewCounts = progressData.review_counts || {};
+    } else {
+      // Load offline progress from mobile IndexedDB
+      const progressData = await loadLocalProgress(userId);
+      state.memorizedIds = new Set(progressData.memorized_ids || []);
+      state.reviewCounts = {};
+    }
 
     updateDashboard();
     renderVocabs();
@@ -83,10 +103,12 @@ async function switchUserProfile(userId) {
 
 async function reloadUserWrongWords() {
   try {
-    const res = await fetch(`/api/users/${state.currentUserId}/wrong-words`);
-    state.wrongWords = await res.json();
+    if (navigator.onLine) {
+      const res = await fetch(`/api/users/${state.currentUserId}/wrong-words`);
+      state.wrongWords = await res.json();
+    }
   } catch (e) {
-    console.error('[Main] Failed to reload user wrong words:', e);
+    console.warn('[Main] Offline, skipping reload wrong words.');
   }
 }
 

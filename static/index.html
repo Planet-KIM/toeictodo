@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TOEIC 750 형용사·부사 550 마스터 | 스마트 학습기</title>
+  
+  <!-- PWA Web App Manifest & Theme -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -250,12 +257,13 @@
         </div>
       </div>
 
-      <!-- Continuous Playback Toolbar -->
+      <!-- Continuous Playback & Mobile Offline Toolbar -->
       <div class="playlist-bar">
         <div class="playlist-left">
           <button id="auto-play-btn" class="playlist-play-btn">▶️ 연속 재생</button>
           <button id="auto-pause-btn" class="playlist-pause-btn hidden">⏸️ 일시정지</button>
           <button id="auto-reset-btn" class="playlist-reset-btn">⏹️ 1번부터</button>
+          <button id="download-audio-pack-btn" class="playlist-reset-btn" style="background:var(--accent-primary);" title="비행기 모드용 전체 원어민 음성 사전 다운로드">📲 오프라인 음성 다운로드</button>
         </div>
         
         <div id="playlist-status" class="playlist-status hidden">
@@ -528,6 +536,7 @@
   <script src="js/state.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/auth.js"></script>
+  <script src="js/offlineDb.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/vocabs.js"></script>
   <script src="js/autoPlayer.js"></script>

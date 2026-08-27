@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, Response
-import urllib.request
 import urllib.parse
 from services.db_service import DbService
+from services.audio_cache_service import AudioCacheService
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -75,6 +75,18 @@ def save_user_progress(user_id):
     result = DbService.save_user_progress(user_id, word_id, is_memorized, toggle)
     return jsonify({'success': True, 'progress': result})
 
+@api_bp.route('/users/<int:user_id>/progress/batch', methods=['POST'])
+def save_user_progress_batch(user_id):
+    """Batch sync user progress from offline queue"""
+    data = request.get_json() or {}
+    items = data.get('items', [])
+    for item in items:
+        word_id = item.get('word_id')
+        is_memorized = item.get('is_memorized', False)
+        if word_id:
+            DbService.save_user_progress(user_id, word_id, is_memorized, toggle=False)
+    return jsonify({'success': True, 'count': len(items)})
+
 @api_bp.route('/users/<int:user_id>/quiz-results', methods=['POST'])
 def save_quiz_result(user_id):
     """Log user quiz result and wrong answers for wrong-notebook"""
@@ -93,11 +105,14 @@ def get_user_wrong_words(user_id):
     wrong_words = DbService.get_user_wrong_words(user_id)
     return jsonify(wrong_words)
 
+# --------------------------------------------------------------------------
+# Audio Proxy & Bulk Preload List for Offline PWA
+# --------------------------------------------------------------------------
 @api_bp.route('/audio', methods=['GET'])
 def get_audio_proxy():
     """
-    Server-side audio proxy to fetch and stream Google TTS MP3 audio.
-    Bypasses CORS restrictions and prevents fallback to browser TTS engine.
+    Server-side audio proxy with disk caching.
+    Streams MP3 audio and caches locally for 100% offline playback.
     """
     text = request.args.get('text', '').strip()
     accent = request.args.get('accent', 'en-us').strip()
@@ -105,18 +120,34 @@ def get_audio_proxy():
     if not text:
         return jsonify({'error': 'Text parameter is required'}), 400
 
-    tts_url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={urllib.parse.quote(text)}&tl={accent}&client=tw-ob"
-
     try:
-        req = urllib.request.Request(
-            tts_url,
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            }
-        )
-        with urllib.request.urlopen(req, timeout=5) as response:
-            audio_data = response.read()
-            return Response(audio_data, mimetype='audio/mpeg')
+        audio_data, cache_relative_url = AudioCacheService.get_or_fetch_audio(text, accent)
+        return Response(audio_data, mimetype='audio/mpeg')
     except Exception as e:
         print(f"[Audio Proxy Error] {e}")
         return jsonify({'error': 'Failed to fetch audio stream'}), 500
+
+@api_bp.route('/audio/preload-list', methods=['GET'])
+def get_audio_preload_list():
+    """
+    Generates list of audio URLs for all 550 words across US, UK, AU accents
+    and Korean prompts for bulk offline caching.
+    """
+    words = DbService.get_words()
+    accents = ['en-us', 'en-gb', 'en-au']
+    urls = []
+
+    for idx, w in enumerate(words):
+        # 1. Number prompt
+        num_text = f"{idx + 1}번"
+        urls.append(f"/api/audio?text={urllib.parse.quote(num_text)}&accent=ko")
+
+        # 2. English Native MP3s
+        for acc in accents:
+            urls.append(f"/api/audio?text={urllib.parse.quote(w['word'])}&accent={acc}")
+
+        # 3. Korean meaning & POS
+        ko_text = f"{w['meaning']}. {w['pos']}."
+        urls.append(f"/api/audio?text={urllib.parse.quote(ko_text)}&accent=ko")
+
+    return jsonify({'total': len(urls), 'urls': urls})
