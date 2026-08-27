@@ -132,7 +132,7 @@ async function syncQueueWithServer() {
 }
 
 // --------------------------------------------------------------------------
-// Bulk Mobile Audio Pack Downloader (ServiceWorker CacheStorage)
+// High-Speed Bulk Mobile Audio Pack Downloader (Parallel Worker Pool)
 // --------------------------------------------------------------------------
 async function downloadOfflineAudioPack(onProgress) {
   try {
@@ -147,27 +147,39 @@ async function downloadOfflineAudioPack(onProgress) {
 
     const audioCache = await caches.open('toeic-audio-v1');
     let completed = 0;
+    let index = 0;
+    const CONCURRENCY = 15; // 15 parallel HTTP connections for ultra-fast download
 
-    for (const url of urls) {
-      try {
-        const match = await audioCache.match(url);
-        if (!match) {
-          const fetchRes = await fetch(url);
-          if (fetchRes.status === 200) {
-            await audioCache.put(url, fetchRes);
+    async function worker() {
+      while (index < urls.length) {
+        const i = index++;
+        const url = urls[i];
+        try {
+          const match = await audioCache.match(url);
+          if (!match) {
+            const fetchRes = await fetch(url);
+            if (fetchRes.status === 200) {
+              await audioCache.put(url, fetchRes);
+            }
           }
+        } catch (err) {
+          console.warn(`[AudioPack] Skipped url ${url}:`, err);
         }
-      } catch (err) {
-        console.warn(`[AudioPack] Skipped url ${url}:`, err);
-      }
 
-      completed++;
-      if (onProgress) {
-        const percent = Math.round((completed / urls.length) * 100);
-        onProgress(completed, urls.length, percent);
+        completed++;
+        if (onProgress) {
+          const percent = Math.round((completed / urls.length) * 100);
+          onProgress(completed, urls.length, percent);
+        }
       }
     }
 
+    const workers = [];
+    for (let i = 0; i < CONCURRENCY; i++) {
+      workers.push(worker());
+    }
+
+    await Promise.all(workers);
     alert('✅ 오프라인 음성 팩 다운로드가 완료되었습니다! 이제 비행기 모드에서도 음성이 정상 작동합니다.');
   } catch (e) {
     console.error('[AudioPack] Failed to download audio pack:', e);
