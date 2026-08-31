@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Vocabs Module - Vocabulary Grid, Filtering & Offline Sync Integration
+   Vocabs Module - Vocabulary Grid, Dynamic POS Filters & Offline Sync
    ========================================================================== */
 
 function getFilteredWords() {
@@ -22,6 +22,48 @@ function getFilteredWords() {
     }
 
     return true;
+  });
+}
+
+function renderDynamicPosFilterPills() {
+  const container = document.getElementById('pos-filters');
+  if (!container || !state.allWords) return;
+
+  const posCounts = {};
+  state.allWords.forEach(w => {
+    const p = w.pos || '기타';
+    posCounts[p] = (posCounts[p] || 0) + 1;
+  });
+
+  const total = state.allWords.length;
+  let html = `<button class="filter-pill ${state.currentPosFilter === 'all' ? 'active' : ''}" data-pos="all">전체 (${total})</button>`;
+
+  const knownOrder = ['형용사', '부사', '명사', '동사', '전치사', '접속사'];
+  const allPosKeys = Object.keys(posCounts);
+
+  knownOrder.forEach(p => {
+    if (posCounts[p]) {
+      html += `<button class="filter-pill ${state.currentPosFilter === p ? 'active' : ''}" data-pos="${p}">${p} (${posCounts[p]})</button>`;
+    }
+  });
+
+  allPosKeys.forEach(p => {
+    if (!knownOrder.includes(p)) {
+      html += `<button class="filter-pill ${state.currentPosFilter === p ? 'active' : ''}" data-pos="${p}">${p} (${posCounts[p]})</button>`;
+    }
+  });
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('.filter-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.currentPosFilter = btn.getAttribute('data-pos');
+      if (state.isAutoPlaying) stopAutoPlayback();
+      state.autoPlayIndex = 0;
+      renderVocabs();
+    });
   });
 }
 
@@ -63,18 +105,6 @@ function setupFilters() {
       renderVocabs();
     });
   }
-
-  // Filter Pills
-  document.querySelectorAll('#pos-filters .filter-pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#pos-filters .filter-pill').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.currentPosFilter = btn.getAttribute('data-pos');
-      if (state.isAutoPlaying) stopAutoPlayback();
-      state.autoPlayIndex = 0;
-      renderVocabs();
-    });
-  });
 
   document.querySelectorAll('#prio-filters .filter-pill').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -128,6 +158,7 @@ function renderVocabs() {
   const container = document.getElementById('vocab-grid');
   if (!container) return;
 
+  renderDynamicPosFilterPills();
   const filtered = getFilteredWords();
   document.getElementById('result-count').textContent = filtered.length;
   updateStartSelectOptions();
@@ -209,10 +240,8 @@ async function toggleMemorized(id) {
   updateDashboard();
   renderVocabs();
 
-  // Save to mobile IndexedDB locally
   await saveLocalProgress(state.currentUserId, id, isMem);
 
-  // Sync with server if online
   if (navigator.onLine) {
     try {
       await fetch(`/api/users/${state.currentUserId}/progress`, {
