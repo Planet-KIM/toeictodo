@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupFlashcards();
   setupQuiz();
   setupModal();
+  setupWordCrudModal();
   setupAuthUI();
 
   await loadData();

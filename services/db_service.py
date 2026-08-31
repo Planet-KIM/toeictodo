@@ -184,6 +184,97 @@ class DbService:
         return words
 
     @classmethod
+    def add_word(cls, word_data):
+        conn = cls.get_connection()
+        cursor = conn.cursor()
+
+        pos = norm(word_data.get('pos', '형용사'))
+        word = norm(word_data.get('word'))
+        meaning = norm(word_data.get('meaning'))
+        priority = norm(word_data.get('priority', 'A'))
+        topic = norm(word_data.get('topic', '일반 업무'))
+        collocation = norm(word_data.get('collocation', ''))
+        trap_point = norm(word_data.get('trap_point', ''))
+        example_en = norm(word_data.get('example_en', ''))
+        example_ko = norm(word_data.get('example_ko', ''))
+
+        cursor.execute('SELECT MAX(word_no) FROM words WHERE pos = ?', (pos,))
+        max_no = cursor.fetchone()[0] or 0
+        new_no = max_no + 1
+        word_id = f"{pos}_{new_no}"
+
+        cursor.execute('''
+            INSERT INTO words 
+            (id, word_no, pos, word, meaning, priority, topic, collocation, trap_point, example_en, example_ko)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (word_id, new_no, pos, word, meaning, priority, topic, collocation, trap_point, example_en, example_ko))
+
+        conn.commit()
+        conn.close()
+
+        return {
+            'id': word_id,
+            'no': new_no,
+            'pos': pos,
+            'word': word,
+            'meaning': meaning,
+            'priority': priority,
+            'topic': topic,
+            'collocation': collocation,
+            'trap_point': trap_point,
+            'example_en': example_en,
+            'example_ko': example_ko
+        }
+
+    @classmethod
+    def update_word(cls, word_id, word_data):
+        conn = cls.get_connection()
+        cursor = conn.cursor()
+
+        pos = norm(word_data.get('pos', '형용사'))
+        word = norm(word_data.get('word'))
+        meaning = norm(word_data.get('meaning'))
+        priority = norm(word_data.get('priority', 'A'))
+        topic = norm(word_data.get('topic', '일반 업무'))
+        collocation = norm(word_data.get('collocation', ''))
+        trap_point = norm(word_data.get('trap_point', ''))
+        example_en = norm(word_data.get('example_en', ''))
+        example_ko = norm(word_data.get('example_ko', ''))
+
+        cursor.execute('''
+            UPDATE words SET
+                pos = ?, word = ?, meaning = ?, priority = ?, topic = ?,
+                collocation = ?, trap_point = ?, example_en = ?, example_ko = ?
+            WHERE id = ?
+        ''', (pos, word, meaning, priority, topic, collocation, trap_point, example_en, example_ko, word_id))
+
+        conn.commit()
+        conn.close()
+
+        return {
+            'id': word_id,
+            'pos': pos,
+            'word': word,
+            'meaning': meaning,
+            'priority': priority,
+            'topic': topic,
+            'collocation': collocation,
+            'trap_point': trap_point,
+            'example_en': example_en,
+            'example_ko': example_ko
+        }
+
+    @classmethod
+    def delete_word(cls, word_id):
+        conn = cls.get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM words WHERE id = ?', (word_id,))
+        cursor.execute('DELETE FROM user_progress WHERE word_id = ?', (word_id,))
+        conn.commit()
+        conn.close()
+        return True
+
+    @classmethod
     def get_pairs(cls):
         conn = cls.get_connection()
         cursor = conn.cursor()
@@ -222,9 +313,6 @@ class DbService:
             })
         return traps
 
-    # ----------------------------------------------------------------------
-    # User Scoped Service Methods
-    # ----------------------------------------------------------------------
     @classmethod
     def get_users(cls):
         conn = cls.get_connection()

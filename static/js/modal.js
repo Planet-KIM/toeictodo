@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Modal Module - Word Detail Popup Overlay Controls
+   Modal Module - Word Detail Popup Overlay Controls & Edit/Delete Buttons
    ========================================================================== */
 
 let activeModalWordId = null;
@@ -35,6 +35,34 @@ function setupModal() {
       openModal(activeModalWordId);
     }
   });
+
+  // Edit Word Button Event
+  const editBtn = document.getElementById('modal-edit-btn');
+  if (editBtn) {
+    editBtn.addEventListener('click', () => {
+      if (activeModalWordId) {
+        const item = state.allWords.find(w => w.id === activeModalWordId);
+        if (item) {
+          modal.classList.add('hidden');
+          openWordCrudModal('edit', item);
+        }
+      }
+    });
+  }
+
+  // Delete Word Button Event
+  const deleteBtn = document.getElementById('modal-delete-btn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', () => {
+      if (activeModalWordId) {
+        const item = state.allWords.find(w => w.id === activeModalWordId);
+        if (item) {
+          modal.classList.add('hidden');
+          deleteWord(item.id, item.word);
+        }
+      }
+    });
+  }
 }
 
 function openModal(wordId) {

@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, Response
 import urllib.parse
 from services.db_service import DbService
 from services.audio_cache_service import AudioCacheService
+from services.auto_fetch_service import AutoFetchService
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -20,6 +21,35 @@ def add_word():
 
     new_word = DbService.add_word(data)
     return jsonify({'success': True, 'word': new_word}), 201
+
+@api_bp.route('/words/auto-fetch', methods=['GET'])
+def auto_fetch_word():
+    """Auto fetch meaning, part-of-speech, and TOEIC example sentence for given word"""
+    word = request.args.get('word', '').strip()
+    if not word:
+        return jsonify({'error': 'word parameter is required'}), 400
+
+    result = AutoFetchService.fetch_word_details(word)
+    if not result:
+        return jsonify({'error': 'Failed to auto-fetch details'}), 404
+
+    return jsonify({'success': True, 'data': result})
+
+@api_bp.route('/words/<word_id>', methods=['PUT'])
+def update_word(word_id):
+    """Update existing word meaning, example, pos, and traps"""
+    data = request.get_json() or {}
+    if not data.get('word') or not data.get('meaning'):
+        return jsonify({'error': 'word and meaning are required'}), 400
+
+    updated = DbService.update_word(word_id, data)
+    return jsonify({'success': True, 'word': updated})
+
+@api_bp.route('/words/<word_id>', methods=['DELETE'])
+def delete_word(word_id):
+    """Delete a word from SQLite DB"""
+    DbService.delete_word(word_id)
+    return jsonify({'success': True})
 
 @api_bp.route('/pairs', methods=['GET'])
 def get_pairs():
@@ -138,15 +168,12 @@ def get_audio_preload_list():
     urls = []
 
     for idx, w in enumerate(words):
-        # 1. Number prompt
         num_text = f"{idx + 1}번"
         urls.append(f"/api/audio?text={urllib.parse.quote(num_text)}&accent=ko")
 
-        # 2. English Native MP3s
         for acc in accents:
             urls.append(f"/api/audio?text={urllib.parse.quote(w['word'])}&accent={acc}")
 
-        # 3. Korean meaning & POS
         ko_text = f"{w['meaning']}. {w['pos']}."
         urls.append(f"/api/audio?text={urllib.parse.quote(ko_text)}&accent=ko")
 
