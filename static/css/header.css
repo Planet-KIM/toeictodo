@@ -1,6 +1,6 @@
 /* ==========================================================================
    Header CSS - Header, Logo, Navigation Tabs, User Profile, Accent Selector & Icons
-   Phase 2 + 4 + Mobile Fix: iPhone 12 Pro (390px) 3-Row Header Layout
+   Fluid Mobile Responsive Architecture (Triggers dynamically on ANY screen <= 600px)
    ========================================================================== */
 
 .app-header {
@@ -250,7 +250,7 @@ body.light-theme .accent-selector {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* Responsive Mobile Layout Rules */
+/* Fluid Responsive Mobile Breakpoints (Triggers dynamically on ANY mobile device) */
 @media (max-width: 900px) {
   .header-container {
     flex-wrap: wrap;
@@ -267,7 +267,6 @@ body.light-theme .accent-selector {
   }
 }
 
-/* iPhone 12 Pro & Small Mobile Screens (width <= 600px) */
 @media (max-width: 600px) {
   .app-header {
     padding: 8px 12px;
