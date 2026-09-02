@@ -21,11 +21,15 @@ const state = {
   // User Preference State
   currentAccent: localStorage.getItem('toeic_accent_pref') || 'en-us',
 
-  // Active Filters
+  // Active Filters & Mobile UX
   currentPosFilter: 'all',
   currentPrioFilter: 'all',
   currentStatusFilter: 'all',
   searchQuery: '',
+  alphabetFilter: 'all',
+  viewMode: 'card',   // 'card' or 'compact'
+  pageSize: 20,       // 20, 50, 100, or 'all'
+  currentPage: 1,
 
   // Playlist & Speed State
   isAutoPlaying: false,

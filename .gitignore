@@ -4,6 +4,10 @@ __pycache__/
 .vscode/
 .idea/
 
+# Heavy ETS mp3 archives & temp office locks
+ETS mp3/
+~$*
+
 # Database Files
 *.db
 *.db-wal
@@ -17,3 +21,4 @@ audio_cache/
 *.m4a
 *.pdf
 *.pptx
+*.zip

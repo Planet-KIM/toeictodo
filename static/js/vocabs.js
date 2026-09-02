@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Vocabs Module - Vocabulary Grid, Dynamic POS Filters & Offline Sync
-   Phase 2: Custom POS Tag Color System & Responsive Render Logic
+   Vocabs Module - Vocabulary Grid, Dynamic POS Filters & Mobile UX Ergonomics
+   Phase 1-4: Glassmorphism, Compact 1-Line View, Pagination & Alphabet Jumper
    ========================================================================== */
 
 function getFilteredWords() {
@@ -17,12 +17,45 @@ function getFilteredWords() {
     if (state.currentStatusFilter === 'unmemorized' && isMem) return false;
     if (state.currentStatusFilter === 'wrong_notebook' && !wrongIds.has(w.id)) return false;
 
+    // Alphabet Jumper Filter
+    if (state.alphabetFilter && state.alphabetFilter !== 'all') {
+      const firstChar = w.word.charAt(0).toUpperCase();
+      if (firstChar !== state.alphabetFilter) return false;
+    }
+
     if (state.searchQuery) {
       const targetStr = `${w.word} ${w.meaning} ${w.collocation} ${w.example_en} ${w.example_ko}`.toLowerCase();
       if (!targetStr.includes(state.searchQuery)) return false;
     }
 
     return true;
+  });
+}
+
+/**
+ * Renders A-Z Alphabet Jumper Pills
+ */
+function renderAlphabetJumper() {
+  const container = document.getElementById('alphabet-jumper-bar');
+  if (!container) return;
+
+  const alphabets = ['all', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')];
+  container.innerHTML = alphabets.map(letter => {
+    const label = letter === 'all' ? 'All (A-Z)' : letter;
+    const activeClass = state.alphabetFilter === letter ? 'active' : '';
+    return `<button class="alpha-btn ${activeClass}" data-alpha="${letter}">${label}</button>`;
+  }).join('');
+
+  container.querySelectorAll('.alpha-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.alpha-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.alphabetFilter = btn.getAttribute('data-alpha');
+      state.currentPage = 1;
+      if (state.isAutoPlaying) stopAutoPlayback();
+      state.autoPlayIndex = 0;
+      renderVocabs();
+    });
   });
 }
 
@@ -61,6 +94,7 @@ function renderDynamicPosFilterPills() {
       container.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.currentPosFilter = btn.getAttribute('data-pos');
+      state.currentPage = 1;
       if (state.isAutoPlaying) stopAutoPlayback();
       state.autoPlayIndex = 0;
       renderVocabs();
@@ -82,7 +116,52 @@ function updateStartSelectOptions() {
   }
 }
 
+/**
+ * Renders Top & Bottom Pagination Control Bar
+ */
+function renderPaginationControls(totalItems) {
+  const topContainer = document.getElementById('pagination-top');
+  const bottomContainer = document.getElementById('pagination-bottom');
+
+  if (state.pageSize === 'all' || totalItems <= state.pageSize) {
+    if (topContainer) topContainer.innerHTML = '';
+    if (bottomContainer) bottomContainer.innerHTML = '';
+    return;
+  }
+
+  const totalPages = Math.ceil(totalItems / state.pageSize);
+  if (state.currentPage > totalPages) state.currentPage = totalPages;
+  if (state.currentPage < 1) state.currentPage = 1;
+
+  const html = `
+    <button class="page-btn prev-btn" ${state.currentPage <= 1 ? 'disabled' : ''}>◀ 이전</button>
+    <span class="page-info">${state.currentPage} / ${totalPages} 페이지</span>
+    <button class="page-btn next-btn" ${state.currentPage >= totalPages ? 'disabled' : ''}>다음 ▶</button>
+  `;
+
+  [topContainer, bottomContainer].forEach(c => {
+    if (!c) return;
+    c.innerHTML = html;
+    c.querySelector('.prev-btn')?.addEventListener('click', () => {
+      if (state.currentPage > 1) {
+        state.currentPage--;
+        renderVocabs();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+    c.querySelector('.next-btn')?.addEventListener('click', () => {
+      if (state.currentPage < totalPages) {
+        state.currentPage++;
+        renderVocabs();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  });
+}
+
 function setupFilters() {
+  renderAlphabetJumper();
+
   const searchInput = document.getElementById('search-input');
   const searchClear = document.getElementById('search-clear');
 
@@ -90,6 +169,7 @@ function setupFilters() {
     searchInput.addEventListener('input', (e) => {
       state.searchQuery = e.target.value.toLowerCase().trim();
       searchClear.style.display = state.searchQuery ? 'block' : 'none';
+      state.currentPage = 1;
       if (state.isAutoPlaying) stopAutoPlayback();
       state.autoPlayIndex = 0;
       renderVocabs();
@@ -101,8 +181,38 @@ function setupFilters() {
       searchInput.value = '';
       state.searchQuery = '';
       searchClear.style.display = 'none';
+      state.currentPage = 1;
       if (state.isAutoPlaying) stopAutoPlayback();
       state.autoPlayIndex = 0;
+      renderVocabs();
+    });
+  }
+
+  // View Mode Toggle Listeners
+  const cardViewBtn = document.getElementById('view-mode-card');
+  const compactViewBtn = document.getElementById('view-mode-compact');
+  if (cardViewBtn && compactViewBtn) {
+    cardViewBtn.addEventListener('click', () => {
+      cardViewBtn.classList.add('active');
+      compactViewBtn.classList.remove('active');
+      state.viewMode = 'card';
+      renderVocabs();
+    });
+    compactViewBtn.addEventListener('click', () => {
+      compactViewBtn.classList.add('active');
+      cardViewBtn.classList.remove('active');
+      state.viewMode = 'compact';
+      renderVocabs();
+    });
+  }
+
+  // Page Size Select Listener
+  const pageSizeSelect = document.getElementById('page-size-select');
+  if (pageSizeSelect) {
+    pageSizeSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      state.pageSize = val === 'all' ? 'all' : parseInt(val);
+      state.currentPage = 1;
       renderVocabs();
     });
   }
@@ -112,6 +222,7 @@ function setupFilters() {
       document.querySelectorAll('#prio-filters .filter-pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.currentPrioFilter = btn.getAttribute('data-prio');
+      state.currentPage = 1;
       if (state.isAutoPlaying) stopAutoPlayback();
       state.autoPlayIndex = 0;
       renderVocabs();
@@ -123,6 +234,7 @@ function setupFilters() {
       document.querySelectorAll('#status-filters .filter-pill').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       state.currentStatusFilter = btn.getAttribute('data-status');
+      state.currentPage = 1;
       if (state.isAutoPlaying) stopAutoPlayback();
       state.autoPlayIndex = 0;
       renderVocabs();
@@ -160,44 +272,87 @@ function renderVocabs() {
   if (!container) return;
 
   renderDynamicPosFilterPills();
-  const filtered = getFilteredWords();
-  document.getElementById('result-count').textContent = filtered.length;
+  const allFiltered = getFilteredWords();
+  document.getElementById('result-count').textContent = allFiltered.length;
   updateStartSelectOptions();
 
-  if (filtered.length === 0) {
+  renderPaginationControls(allFiltered.length);
+
+  if (allFiltered.length === 0) {
+    container.className = 'vocab-grid';
     container.innerHTML = `<div class="empty-state text-muted" style="grid-column: 1/-1; text-align:center; padding: 40px;">검색 결과에 해당하는 단어가 없습니다.</div>`;
     return;
   }
 
-  container.innerHTML = filtered.map((w, idx) => {
-    const isMem = state.memorizedIds.has(w.id);
-    const prioClass = `badge-${w.priority.toLowerCase()}`;
-    const posTagClass = `tag-pos-${w.pos || '기타어휘'}`;
-    return `
-      <div class="vocab-card ${isMem ? 'memorized' : ''}" data-word-id="${w.id}" data-item-idx="${idx}">
-        <div class="card-top">
-          <span class="card-word">${w.word}</span>
-          <div class="card-tags">
-            <span class="badge ${prioClass}">${w.priority}등급</span>
-            <span class="tag ${posTagClass}">${w.pos}</span>
-          </div>
-        </div>
-        <div class="card-meaning">${w.meaning}</div>
-        ${w.collocation ? `<div class="card-collocation">💡 ${w.collocation}</div>` : ''}
-        <div class="card-footer">
-          <div class="card-footer-left">
-            <button class="speech-btn" data-tts-word="${w.word}" title="원어민 발음 들으러가기">🔊</button>
-            <button class="play-from-here-btn" data-play-from-idx="${idx}" title="이 단어부터 연속 재생">▶️ 이 위치부터</button>
-          </div>
-          <button class="check-mem-btn ${isMem ? 'checked' : ''}" data-toggle-id="${w.id}">
-            ${isMem ? '✓ 암기완료' : '+ 암기하기'}
-          </button>
-        </div>
-      </div>
-    `;
-  }).join('');
+  // Slice words for active page
+  let displayWords = allFiltered;
+  let pageOffset = 0;
+  if (state.pageSize !== 'all') {
+    pageOffset = (state.currentPage - 1) * state.pageSize;
+    displayWords = allFiltered.slice(pageOffset, pageOffset + state.pageSize);
+  }
 
-  container.querySelectorAll('.vocab-card').forEach(card => {
+  // Render Compact 1-Line View Mode
+  if (state.viewMode === 'compact') {
+    container.className = 'vocab-grid compact-mode';
+    container.innerHTML = displayWords.map((w, idx) => {
+      const globalIdx = pageOffset + idx;
+      const isMem = state.memorizedIds.has(w.id);
+      const prioClass = `badge-${w.priority.toLowerCase()}`;
+      const posTagClass = `tag-pos-${w.pos || '기타어휘'}`;
+      return `
+        <div class="compact-row ${isMem ? 'memorized' : ''}" data-word-id="${w.id}" data-item-idx="${globalIdx}">
+          <div class="compact-left">
+            <span class="compact-no">${globalIdx + 1}</span>
+            <span class="compact-word">${w.word}</span>
+            <span class="badge ${prioClass}">${w.priority}</span>
+            <span class="tag ${posTagClass}">${w.pos}</span>
+            <span class="compact-meaning">${w.meaning}</span>
+          </div>
+          <div class="compact-right">
+            <button class="speech-btn" data-tts-word="${w.word}" title="원어민 발음 듣기">🔊</button>
+            <button class="check-mem-btn ${isMem ? 'checked' : ''}" data-toggle-id="${w.id}">
+              ${isMem ? '✓' : '+'}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    // Render Card 3D View Mode
+    container.className = 'vocab-grid';
+    container.innerHTML = displayWords.map((w, idx) => {
+      const globalIdx = pageOffset + idx;
+      const isMem = state.memorizedIds.has(w.id);
+      const prioClass = `badge-${w.priority.toLowerCase()}`;
+      const posTagClass = `tag-pos-${w.pos || '기타어휘'}`;
+      return `
+        <div class="vocab-card ${isMem ? 'memorized' : ''}" data-word-id="${w.id}" data-item-idx="${globalIdx}">
+          <div class="card-top">
+            <span class="card-word">${w.word}</span>
+            <div class="card-tags">
+              <span class="badge ${prioClass}">${w.priority}등급</span>
+              <span class="tag ${posTagClass}">${w.pos}</span>
+            </div>
+          </div>
+          <div class="card-meaning">${w.meaning}</div>
+          ${w.collocation ? `<div class="card-collocation">💡 ${w.collocation}</div>` : ''}
+          <div class="card-footer">
+            <div class="card-footer-left">
+              <button class="speech-btn" data-tts-word="${w.word}" title="원어민 발음 들으러가기">🔊</button>
+              <button class="play-from-here-btn" data-play-from-idx="${globalIdx}" title="이 단어부터 연속 재생">▶️ 이 위치부터</button>
+            </div>
+            <button class="check-mem-btn ${isMem ? 'checked' : ''}" data-toggle-id="${w.id}">
+              ${isMem ? '✓ 암기완료' : '+ 암기하기'}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Attach Card & Compact Row Click Event Handlers
+  container.querySelectorAll('.vocab-card, .compact-row').forEach(card => {
     const wordId = card.getAttribute('data-word-id');
     card.addEventListener('click', (e) => {
       if (e.target.closest('button')) return;

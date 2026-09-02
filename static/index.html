@@ -247,13 +247,32 @@
     <!-- 2. VOCABULARY LIST VIEW -->
     <section id="view-vocabs" class="tab-view">
       <div class="controls-panel">
-        <div style="display:flex; gap:12px; align-items:center; width:100%;">
-          <div class="search-box" style="flex:1;">
+        <!-- Alphabet Quick Jumper Bar -->
+        <div id="alphabet-jumper-bar" class="alphabet-jumper-bar"></div>
+
+        <div style="display:flex; gap:12px; align-items:center; width:100%; flex-wrap:wrap;">
+          <div class="search-box" style="flex:1; min-width:240px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input type="text" id="search-input" placeholder="단어, 뜻, 결합문형, 예문 검색...">
             <button id="search-clear" class="clear-btn">&times;</button>
           </div>
-          <button id="add-new-word-btn" class="primary-btn lg" style="white-space:nowrap; padding: 12px 20px; font-weight:800; background:var(--accent-gradient); flex-shrink:0;">➕ 새 단어 등록</button>
+
+          <!-- View Mode & Page Size Selector Controls -->
+          <div style="display:flex; gap:8px; align-items:center;">
+            <div class="view-mode-toggle" title="리스트 보기 방식 선택">
+              <button id="view-mode-card" class="view-mode-btn active">🎴 카드 뷰</button>
+              <button id="view-mode-compact" class="view-mode-btn">📋 1줄 요약 뷰</button>
+            </div>
+
+            <select id="page-size-select" class="playlist-select" title="페이지당 단어 개수 선택">
+              <option value="20" selected>20개씩 보기</option>
+              <option value="50">50개씩 보기</option>
+              <option value="100">100개씩 보기</option>
+              <option value="all">전체 550개 보기</option>
+            </select>
+
+            <button id="add-new-word-btn" class="primary-btn lg" style="white-space:nowrap; padding: 10px 16px; font-weight:800; background:var(--accent-gradient); flex-shrink:0;">➕ 단어 등록</button>
+          </div>
         </div>
 
         <div class="filter-group">
@@ -329,13 +348,18 @@
         </div>
       </div>
 
-      <div class="list-meta">
-        <span>검색 결과: <strong id="result-count">0</strong>개 단어</span>
+      <div class="list-meta" style="flex-wrap:wrap; gap:10px;">
+        <div>검색 결과: <strong id="result-count">0</strong>개 단어</div>
+        <!-- Pagination Controls Top -->
+        <div id="pagination-top" class="pagination-bar"></div>
         <button id="reset-progress-btn" class="text-btn">학습 상태 초기화</button>
       </div>
 
-      <!-- Vocab Grid -->
+      <!-- Vocab Grid Container -->
       <div id="vocab-grid" class="vocab-grid"></div>
+
+      <!-- Pagination Controls Bottom -->
+      <div id="pagination-bottom" class="pagination-bar" style="margin-top:20px; justify-content:center;"></div>
     </section>
 
 
