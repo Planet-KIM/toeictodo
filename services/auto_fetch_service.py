@@ -32,7 +32,6 @@ TOEIC_COLLOCATIONS = {
     'comparable': 'be comparable to / with',
     'integral': 'be integral to',
     'unanimous': 'be unanimous in',
-    'reluctant': 'be reluctant to-v',
     'prohibited': 'be prohibited from + -ing',
     'exempt': 'be exempt from',
     'critical': 'be critical of / to',
@@ -44,11 +43,18 @@ TOEIC_COLLOCATIONS = {
 }
 
 class AutoFetchService:
+    _cache = {}  # Phase 5: Server-side In-Memory Cache to prevent rate limits & API delays
+
     @classmethod
     def fetch_word_details(cls, word):
         word_lower = word.strip().lower()
         if not word_lower:
             return None
+
+        # Check In-Memory Cache first (0ms response)
+        if word_lower in cls._cache:
+            print(f"[AutoFetch Cache Hit] Returning cached details for '{word_lower}'")
+            return cls._cache[word_lower]
 
         meaning = ""
         example_en = ""
@@ -191,7 +197,7 @@ class AutoFetchService:
         except Exception as e:
             print(f"[AutoFetch] Example translate error: {e}")
 
-        return {
+        res_data = {
             'word': word_lower,
             'pos': pos,
             'meaning': meaning or "의미 정보",
@@ -202,3 +208,7 @@ class AutoFetchService:
             'example_en': example_en,
             'example_ko': example_ko or "예문 해석"
         }
+
+        # Store in Server Cache
+        cls._cache[word_lower] = res_data
+        return res_data

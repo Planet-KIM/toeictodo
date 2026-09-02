@@ -13,8 +13,10 @@ def norm(text):
 class DbService:
     @classmethod
     def get_connection(cls):
-        conn = sqlite3.connect(Config.DB_FILE)
+        """Phase 5: Thread-safe SQLite connection with WAL journal mode & 5s busy timeout"""
+        conn = sqlite3.connect(Config.DB_FILE, timeout=5.0)
         conn.row_factory = sqlite3.Row
+        conn.execute('PRAGMA journal_mode=WAL;')
         return conn
 
     @classmethod
@@ -91,6 +93,12 @@ class DbService:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+
+        # Phase 5: High-Performance Database Indexes
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_words_pos_no ON words(pos, word_no);')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_words_priority ON words(priority);')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_progress_uid_wid ON user_progress(user_id, word_id);')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_quiz_logs_user_id ON user_quiz_logs(user_id);')
 
         conn.commit()
 
@@ -359,7 +367,6 @@ class DbService:
         conn = cls.get_connection()
         cursor = conn.cursor()
 
-        # Fetch last 14 days activity
         cursor.execute('''
             SELECT DATE(last_reviewed_at) as log_date, COUNT(*) as cnt
             FROM user_progress
@@ -372,7 +379,6 @@ class DbService:
 
         activity_map = {r['log_date']: r['cnt'] for r in rows if r['log_date']}
 
-        # Calculate Last 7 Days (Mon~Sun or last 7 days)
         chart_data = []
         today = datetime.now().date()
         for i in range(6, -1, -1):
@@ -386,7 +392,6 @@ class DbService:
                 'count': cnt
             })
 
-        # Calculate Consecutive Streak
         streak = 0
         curr_check = today
         while True:
@@ -395,7 +400,6 @@ class DbService:
                 streak += 1
                 curr_check -= timedelta(days=1)
             else:
-                # Allow 1-day grace period if today hasn't been logged yet
                 if curr_check == today:
                     curr_check -= timedelta(days=1)
                     continue
