@@ -57,6 +57,10 @@ TAG_MAP = {
     'conjunction': '접속사'
 }
 
+def is_korean_text(text):
+    """Check if string contains Korean characters."""
+    return bool(re.search(r'[가-힣]', text))
+
 class AutoFetchService:
     _cache = {}  # In-Memory Cache to prevent rate limits & API delays
 
@@ -75,7 +79,7 @@ class AutoFetchService:
         example_en = ""
         example_ko = ""
         found_pos_list = []
-        meaning_options = []
+        raw_meaning_options = []
 
         # 1. Fetch Meaning via MyMemory Translation API
         try:
@@ -83,10 +87,23 @@ class AutoFetchService:
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=5) as r:
                 data = json.loads(r.read().decode('utf-8'))
+                matches = data.get('matches', [])
+                for m in matches:
+                    trans = m.get('translation', '').strip()
+                    if trans and is_korean_text(trans) and trans.lower() != word_lower:
+                        # Split by commas or slashes
+                        for part in re.split(r'[,;/]', trans):
+                            cleaned = part.strip()
+                            if cleaned and cleaned not in raw_meaning_options:
+                                raw_meaning_options.append(cleaned)
+
                 translated = data.get('responseData', {}).get('translatedText', '')
-                if translated and translated.lower() != word_lower:
+                if translated and is_korean_text(translated) and translated.lower() != word_lower:
                     meaning = translated
-                    meaning_options.append(translated)
+                    for part in re.split(r'[,;/]', translated):
+                        cleaned = part.strip()
+                        if cleaned and cleaned not in raw_meaning_options:
+                            raw_meaning_options.append(cleaned)
         except Exception as e:
             print(f"[AutoFetch] MyMemory error: {e}")
 
@@ -102,15 +119,10 @@ class AutoFetchService:
                     for d in defs:
                         parts = d.split('\t')
                         tag = parts[0]
-                        def_text = parts[-1].strip() if len(parts) > 1 else ''
-
                         if tag in TAG_MAP:
                             pos_kor = TAG_MAP[tag]
                             if pos_kor not in found_pos_list:
                                 found_pos_list.append(pos_kor)
-
-                        if def_text and def_text not in meaning_options:
-                            meaning_options.append(def_text)
 
                     if not meaning and defs:
                         meaning = defs[0].split('\t')[-1].strip()
@@ -134,9 +146,6 @@ class AutoFetchService:
                         for defn in m.get('definitions', []):
                             if defn.get('example') and not example_en:
                                 example_en = defn.get('example')
-
-                            if defn.get('definition') and defn.get('definition') not in meaning_options:
-                                meaning_options.append(defn.get('definition'))
         except Exception as e:
             print(f"[AutoFetch] FreeDict error: {e}")
 
@@ -220,12 +229,15 @@ class AutoFetchService:
         except Exception as e:
             print(f"[AutoFetch] Example translate error: {e}")
 
+        # Filter meaning options to Korean text only
+        korean_meaning_chips = [opt for opt in raw_meaning_options if is_korean_text(opt)]
+
         res_data = {
             'word': word_lower,
             'pos': pos_str,
             'pos_list': found_pos_list,
             'meaning': meaning or "의미 정보",
-            'meaning_options': meaning_options[:6],
+            'meaning_options': korean_meaning_chips[:6],
             'priority': "A",
             'topic': "일반 업무",
             'collocation': collocation,

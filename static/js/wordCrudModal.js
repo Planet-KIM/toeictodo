@@ -63,14 +63,13 @@ function setupWordCrudModal() {
           document.getElementById('form-example-en-input').value = d.example_en || '';
           document.getElementById('form-example-ko-input').value = d.example_ko || '';
 
-          // Render Clickable Meaning Chips for Multi-Meaning Selection
+          // Render Clickable Korean Meaning Chips
           if (chipsContainer && d.meaning_options && d.meaning_options.length > 0) {
             chipsContainer.innerHTML = '';
-            d.meaning_options.forEach((opt, idx) => {
+            d.meaning_options.forEach((opt) => {
               const chip = document.createElement('button');
               chip.type = 'button';
-              chip.className = 'alpha-btn';
-              chip.style.cssText = 'font-size:0.75rem; padding:3px 8px; background:rgba(99,102,241,0.15); border:1px solid var(--accent-primary); color:var(--text-primary); cursor:pointer; border-radius:10px;';
+              chip.className = 'meaning-chip-btn';
               chip.textContent = `+ ${opt}`;
               chip.addEventListener('click', () => {
                 const curVal = meaningEl.value.trim();

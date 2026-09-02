@@ -23,7 +23,7 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-glow);
   border-radius: var(--radius-lg);
-  max-width: 540px;
+  max-width: 560px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
@@ -163,6 +163,66 @@
   gap: 8px;
 }
 
+/* Smart Word CRUD Form Grid System */
+.form-grid-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.meaning-chips-container {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.meaning-chip-btn {
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid var(--accent-primary);
+  color: var(--text-primary);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.meaning-chip-btn:hover {
+  background: var(--accent-gradient);
+  color: #fff;
+  border-color: transparent;
+}
+
 /* Mobile Devices (<= 600px) Responsive Layout Rules */
 @media (max-width: 600px) {
   .modal-backdrop {
@@ -176,6 +236,11 @@
     width: calc(100% - 10px);
     margin: 0 auto;
     box-sizing: border-box;
+  }
+
+  .grid-2col {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .modal-body h2 {

@@ -593,29 +593,24 @@
       <h3 id="word-form-modal-title" style="margin-bottom:6px;">➕ 새 단어 등록</h3>
       <p class="text-muted" style="font-size:0.85rem; margin-bottom:16px;">단어를 입력하고 [🔍 자동 검색]을 누르면 예문과 뜻이 자동으로 채워집니다.</p>
 
-      <div style="display:flex; flex-direction:column; gap:14px;">
-        <div style="display:flex; gap:10px;">
-          <div style="flex:2;">
-            <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">영어 단어 *</label>
+      <div class="form-grid-modal">
+        <div style="display:flex; gap:10px; align-items:flex-end;">
+          <div class="form-field" style="flex:2;">
+            <label class="form-label">영어 단어 *</label>
             <input type="text" id="form-word-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="예: vibrant, subsequent">
           </div>
-          <div style="flex:1; display:flex; align-items:flex-end;">
+          <div style="flex:1;">
             <button id="btn-auto-fetch-details" class="secondary-btn" style="width:100%; padding:10px; font-size:0.82rem; white-space:nowrap; background:rgba(99,102,241,0.2); border-color:var(--accent-primary);">🔍 자동 검색</button>
           </div>
         </div>
 
-        <div style="display:flex; gap:10px;">
-          <div style="flex:1.2;">
-            <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">품사 * (다중 품사는 콤마 구분)</label>
+        <div class="grid-2col">
+          <div class="form-field">
+            <label class="form-label">품사 * (다중 품사는 콤마 구분)</label>
             <input type="text" id="form-pos-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="예: 형용사, 명사" value="형용사">
           </div>
-          <div style="flex:2;">
-            <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">한글 뜻 *</label>
-            <input type="text" id="form-meaning-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="예: 1. 대등한, 비슷한 2. 비교 가능한">
-            <div id="form-meaning-chips" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;"></div>
-          </div>
-          <div style="flex:1;">
-            <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">우선순위 등급</label>
+          <div class="form-field">
+            <label class="form-label">우선순위 등급</label>
             <select id="form-priority-select" class="playlist-select" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);">
               <option value="A">A등급 (최우선)</option>
               <option value="B">B등급 (주요)</option>
@@ -624,28 +619,35 @@
           </div>
         </div>
 
-        <div>
-          <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">출제 분야 / 토픽</label>
-          <input type="text" id="form-topic-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" value="일반 업무">
+        <div class="form-field">
+          <label class="form-label">한글 뜻 *</label>
+          <input type="text" id="form-meaning-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="예: 1. 대등한, 비슷한 2. 비교 가능한">
+          <div id="form-meaning-chips" class="meaning-chips-container"></div>
         </div>
 
-        <div>
-          <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">TOEIC 결합문형 / 연어</label>
-          <input type="text" id="form-collocation-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="예: vibrant economy">
+        <div class="grid-2col">
+          <div class="form-field">
+            <label class="form-label">출제 분야 / 토픽</label>
+            <input type="text" id="form-topic-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" value="일반 업무">
+          </div>
+          <div class="form-field">
+            <label class="form-label">TOEIC 결합문형 / 연어</label>
+            <input type="text" id="form-collocation-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="예: vibrant economy">
+          </div>
         </div>
 
-        <div>
-          <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Part 5 함정 포인트</label>
+        <div class="form-field">
+          <label class="form-label">Part 5 함정 포인트</label>
           <input type="text" id="form-trap-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="예: 명사 앞 수식 자리에 위치">
         </div>
 
-        <div>
-          <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">TOEIC 영문 예문</label>
+        <div class="form-field">
+          <label class="form-label">TOEIC 영문 예문</label>
           <textarea id="form-example-en-input" rows="2" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="The city has a vibrant cultural life."></textarea>
         </div>
 
-        <div>
-          <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">예문 한글 해석</label>
+        <div class="form-field">
+          <label class="form-label">예문 한글 해석</label>
           <textarea id="form-example-ko-input" rows="2" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="그 도시는 활기찬 문화생활을 가지고 있습니다."></textarea>
         </div>
       </div>
