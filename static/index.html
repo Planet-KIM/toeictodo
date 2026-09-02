@@ -208,6 +208,19 @@
         <div id="activity-chart-container" style="display:flex; gap:12px; align-items:flex-end; height:120px; padding:10px 14px; background:rgba(0,0,0,0.18); border-radius:var(--radius-sm); border:1px solid var(--border-color);"></div>
       </div>
 
+      <!-- Phase 4: Data Export & Backup/Restore -->
+      <div class="section-card" style="margin-top:20px;">
+        <h3 style="margin-bottom:10px;">💾 데이터 백업 및 엑셀 내보내기</h3>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          <a href="/api/words/export/excel" class="primary-btn sm" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">📊 엑셀(.xlsx) 파일로 내보내기</a>
+          <a href="/api/words/export/json" class="secondary-btn sm" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">📥 JSON 전체 백업 파일 다운로드</a>
+          <label class="secondary-btn sm" style="cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+            📤 백업 파일(.json) 복원하기
+            <input type="file" id="import-json-input" accept=".json" style="display:none;">
+          </label>
+        </div>
+      </div>
+
       <!-- Quick Action Cards -->
       <div class="dashboard-sections" style="margin-top:20px;">
         <div class="section-card">

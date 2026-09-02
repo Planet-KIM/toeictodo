@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Dashboard Module - Progress Tracking, Statistics & Phase 3 Activity Streak Chart
+   Dashboard Module - Progress Tracking, Statistics & Phase 3/4 Features
    ========================================================================== */
 
 async function updateDashboard() {
@@ -108,4 +108,37 @@ function setupDashboardQuickButtons() {
       else if (action === 'quiz-wrong') startQuizMode('wrong');
     });
   });
+
+  // Phase 4: Import JSON Backup Handler with Validation & Exception Handling
+  const importInput = document.getElementById('import-json-input');
+  if (importInput) {
+    importInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/api/words/import/json', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          alert(`단어장 데이터 복원 완료! 총 ${data.count}개 단어가 성공적으로 복원되었습니다.`);
+          await loadData();
+          updateDashboard();
+          renderVocabs();
+        } else {
+          alert(`복원 실패: ${data.error || '유효하지 않은 백업 파일입니다.'}`);
+        }
+      } catch (err) {
+        console.error('Import error:', err);
+        alert('백업 파일 복원 중 오류가 발생했습니다.');
+      } finally {
+        importInput.value = '';
+      }
+    });
+  }
 }

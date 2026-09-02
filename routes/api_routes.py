@@ -1,5 +1,8 @@
 from flask import Blueprint, jsonify, request, Response
 import urllib.parse
+import json
+import io
+from openpyxl import Workbook
 from services.db_service import DbService
 from services.audio_cache_service import AudioCacheService
 from services.auto_fetch_service import AutoFetchService
@@ -21,6 +24,91 @@ def add_word():
 
     new_word = DbService.add_word(data)
     return jsonify({'success': True, 'word': new_word}), 201
+
+# --------------------------------------------------------------------------
+# Phase 4: Excel & JSON Export / Backup & Import Endpoints
+# --------------------------------------------------------------------------
+@api_bp.route('/words/export/excel', methods=['GET'])
+def export_words_excel():
+    """Phase 4: Export vocabulary words as a downloadable Excel (.xlsx) file"""
+    try:
+        words = DbService.get_words()
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "TOEIC_Words"
+        ws.append(["ID", "번호", "품사", "단어", "한글뜻", "우선순위", "토픽", "결합문형", "함정포인트", "영문예문", "예문해석"])
+
+        for w in words:
+            ws.append([
+                w.get('id'), w.get('no'), w.get('pos'), w.get('word'),
+                w.get('meaning'), w.get('priority'), w.get('topic'),
+                w.get('collocation'), w.get('trap_point'),
+                w.get('example_en'), w.get('example_ko')
+            ])
+
+        out = io.BytesIO()
+        wb.save(out)
+        out.seek(0)
+
+        return Response(
+            out.getvalue(),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=TOEIC_550_Master_Export.xlsx"}
+        )
+    except Exception as e:
+        return jsonify({'error': f"Excel export error: {str(e)}"}), 500
+
+@api_bp.route('/words/export/json', methods=['GET'])
+def export_words_json():
+    """Phase 4: Export words and pairs as JSON backup file"""
+    try:
+        words = DbService.get_words()
+        pairs = DbService.get_pairs()
+        traps = DbService.get_traps()
+
+        backup_data = {
+            'version': '1.0',
+            'exported_at': str(request.date or ''),
+            'words': words,
+            'pairs': pairs,
+            'traps': traps
+        }
+
+        json_str = json.dumps(backup_data, ensure_ascii=False, indent=2)
+        return Response(
+            json_str,
+            mimetype="application/json",
+            headers={"Content-Disposition": "attachment; filename=toeic_backup.json"}
+        )
+    except Exception as e:
+        return jsonify({'error': f"JSON export error: {str(e)}"}), 500
+
+@api_bp.route('/words/import/json', methods=['POST'])
+def import_words_json():
+    """Phase 4: Restore backup JSON with validation & exception handling"""
+    try:
+        file = request.files.get('file')
+        if not file:
+            return jsonify({'error': '업로드할 백업 파일(.json)을 선택해 주세요.'}), 400
+
+        content = file.read().decode('utf-8')
+        data = json.loads(content)
+
+        if not isinstance(data, dict) or 'words' not in data or not isinstance(data['words'], list):
+            return jsonify({'error': '올바른 단어장 백업 파일(.json) 형식이 아닙니다. (words 데이터 누락)'}), 400
+
+        words = data['words']
+        restored_count = 0
+        for w in words:
+            if w.get('word') and w.get('meaning'):
+                DbService.add_word(w)
+                restored_count += 1
+
+        return jsonify({'success': True, 'count': restored_count})
+    except json.JSONDecodeError:
+        return jsonify({'error': '손상되었거나 올바르지 않은 JSON 데이터입니다.'}), 400
+    except Exception as e:
+        return jsonify({'error': f"복원 중 오류 발생: {str(e)}"}), 500
 
 @api_bp.route('/words/auto-fetch', methods=['GET'])
 def auto_fetch_word():
