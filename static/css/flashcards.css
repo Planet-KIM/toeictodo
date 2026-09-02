@@ -1,9 +1,10 @@
 /* ==========================================================================
-   Flashcards CSS - 3D Flashcard Container & Flip Animations
+   Flashcards CSS - 3D Flashcard Container & Perspective Flip Animations
+   Phase 3: Enhanced 3D Depth Perspective & Glassmorphic Card Lighting
    ========================================================================== */
 
 .flashcard-container {
-  max-width: 650px;
+  max-width: 680px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -15,28 +16,34 @@
   justify-content: space-between;
   align-items: center;
   background: var(--bg-card);
-  padding: 12px 20px;
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  padding: 14px 22px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
 }
 
 .fc-mode-selectors label {
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: var(--text-secondary);
   margin-right: 14px;
   cursor: pointer;
+  font-weight: 500;
 }
 
 .fc-counter {
   font-family: 'Outfit', sans-serif;
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--accent-primary);
 }
 
-/* 3D Card */
+/* 3D Card Surface & 1200px Perspective */
 .flashcard-3d {
   width: 100%;
-  min-height: 400px;
-  perspective: 1000px;
+  min-height: 420px;
+  perspective: 1200px;
   cursor: pointer;
   position: relative;
 }
@@ -48,19 +55,23 @@
   top: 0;
   left: 0;
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   border-radius: var(--radius-lg);
-  padding: 30px;
+  padding: 32px;
   background: var(--bg-card);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--border-glow);
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
 }
 
 .fc-back {
   transform: rotateY(180deg);
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
 }
 
 .flashcard-3d.flipped .fc-front {
@@ -79,29 +90,32 @@
 
 .fc-main-text {
   font-family: 'Outfit', sans-serif;
-  font-size: 3rem;
+  font-size: 3.2rem;
   font-weight: 800;
   text-align: center;
   margin: 30px 0;
   color: var(--text-primary);
+  letter-spacing: -0.03em;
+  text-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
 }
 
 .fc-meaning {
-  font-size: 1.8rem;
+  font-size: 1.85rem;
   font-weight: 700;
   text-align: center;
-  color: var(--accent-secondary);
+  color: var(--accent-primary);
   margin: 10px 0;
 }
 
 .fc-details {
-  background: rgba(0, 0, 0, 0.25);
-  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 18px;
   border-radius: var(--radius-md);
   font-size: 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  border: 1px solid var(--border-color);
 }
 
 .example-title-bar {
@@ -113,7 +127,8 @@
 
 .fc-hint {
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
 }
 
 .flashcard-actions {
@@ -134,6 +149,27 @@
   transition: var(--transition);
 }
 
-.action-btn:hover { background: rgba(255, 255, 255, 0.15); }
-.action-btn.pass { background: rgba(16, 185, 129, 0.2); border-color: var(--success); color: var(--success); }
-.action-btn.retry { background: rgba(239, 68, 68, 0.2); border-color: var(--error); color: var(--error); }
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.action-btn.pass {
+  background: rgba(46, 213, 115, 0.2);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.action-btn.pass:hover {
+  box-shadow: 0 8px 20px rgba(46, 213, 115, 0.3);
+}
+
+.action-btn.retry {
+  background: rgba(255, 71, 87, 0.2);
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.action-btn.retry:hover {
+  box-shadow: 0 8px 20px rgba(255, 71, 87, 0.3);
+}

@@ -1,5 +1,6 @@
 /* ==========================================================================
    Vocabs Module - Vocabulary Grid, Dynamic POS Filters & Offline Sync
+   Phase 2: Custom POS Tag Color System & Responsive Render Logic
    ========================================================================== */
 
 function getFilteredWords() {
@@ -171,13 +172,14 @@ function renderVocabs() {
   container.innerHTML = filtered.map((w, idx) => {
     const isMem = state.memorizedIds.has(w.id);
     const prioClass = `badge-${w.priority.toLowerCase()}`;
+    const posTagClass = `tag-pos-${w.pos || '기타어휘'}`;
     return `
       <div class="vocab-card ${isMem ? 'memorized' : ''}" data-word-id="${w.id}" data-item-idx="${idx}">
         <div class="card-top">
           <span class="card-word">${w.word}</span>
           <div class="card-tags">
             <span class="badge ${prioClass}">${w.priority}등급</span>
-            <span class="tag">${w.pos}</span>
+            <span class="tag ${posTagClass}">${w.pos}</span>
           </div>
         </div>
         <div class="card-meaning">${w.meaning}</div>

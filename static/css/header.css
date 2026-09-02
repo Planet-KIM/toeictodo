@@ -1,13 +1,15 @@
 /* ==========================================================================
-   Header CSS - Header, Logo, Navigation Tabs, User Selector, Accent Selector & Icons
+   Header CSS - Header, Logo, Navigation Tabs, User Profile, Accent Selector & Icons
+   Phase 2 + 4: Responsive Mobile Layout & Header Overlap Fix
    ========================================================================== */
 
 .app-header {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(11, 15, 25, 0.92);
   backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
   border-bottom: 1px solid var(--border-color);
   padding: 10px 20px;
 }
@@ -58,12 +60,13 @@ body.light-theme .app-header {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.3);
   padding: 4px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   flex-wrap: nowrap;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 body.light-theme .nav-tabs {
@@ -106,6 +109,37 @@ body.light-theme .nav-tabs {
   flex-shrink: 0;
 }
 
+.header-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--error);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
 /* User Profile Selector in Header */
 .user-selector-container {
   display: flex;
@@ -145,7 +179,7 @@ body.light-theme .user-selector-container {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.3);
   padding: 4px 8px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
@@ -214,4 +248,47 @@ body.light-theme .accent-selector {
 
 .icon-btn:hover {
   background: rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive Mobile Layout Rules */
+@media (max-width: 900px) {
+  .header-container {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .nav-tabs {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .header-actions {
+    margin-left: auto;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .logo-title {
+    font-size: 1rem;
+  }
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .accent-selector {
+    padding: 2px 6px;
+  }
+  .accent-btn {
+    padding: 3px 6px;
+    font-size: 0.72rem;
+  }
+  .header-user-badge {
+    padding: 4px 8px;
+    font-size: 0.78rem;
+  }
+  .logout-btn {
+    padding: 4px 8px;
+    font-size: 0.78rem;
+  }
 }
