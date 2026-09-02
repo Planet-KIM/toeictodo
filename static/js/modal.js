@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Modal Module - Word Detail Popup Overlay Controls & Edit/Delete Buttons
+   Modal Module - Word Detail Popup Overlay Controls & Multi-POS Rendering
    ========================================================================== */
 
 let activeModalWordId = null;
@@ -72,7 +72,15 @@ function openModal(wordId) {
   activeModalWordId = wordId;
   const isMem = state.memorizedIds.has(wordId);
 
-  document.getElementById('modal-pos').textContent = item.pos;
+  const posEl = document.getElementById('modal-pos');
+  if (posEl) {
+    if (typeof renderPosBadges === 'function') {
+      posEl.outerHTML = `<div id="modal-pos" style="display:inline-flex; gap:4px; flex-wrap:wrap;">${renderPosBadges(item.pos)}</div>`;
+    } else {
+      posEl.textContent = item.pos;
+    }
+  }
+
   document.getElementById('modal-prio').textContent = `${item.priority}등급`;
   document.getElementById('modal-prio').className = `badge badge-${item.priority.toLowerCase()}`;
   document.getElementById('modal-topic').textContent = item.topic;

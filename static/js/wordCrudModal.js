@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Word CRUD Modal Module - Add, Edit, Delete & Auto-Fetch Example Sentences
+   Word CRUD Modal Module - Add, Edit, Delete & Multi-POS / Multi-Meaning Support
    ========================================================================== */
 
 let currentFormMode = 'add'; // 'add' or 'edit'
@@ -31,7 +31,7 @@ function setupWordCrudModal() {
     });
   }
 
-  // 🔍 Auto-Fetch Button Click Handler
+  // 🔍 Auto-Fetch Button Click Handler with Multi-POS & Multi-Meaning Support
   if (autoFetchBtn && wordInput) {
     autoFetchBtn.addEventListener('click', async () => {
       const word = wordInput.value.trim();
@@ -50,13 +50,39 @@ function setupWordCrudModal() {
 
         if (res.ok && result.success && result.data) {
           const d = result.data;
-          document.getElementById('form-pos-select').value = d.pos || '형용사';
-          document.getElementById('form-meaning-input').value = d.meaning || '';
+          const posEl = document.getElementById('form-pos-input');
+          const meaningEl = document.getElementById('form-meaning-input');
+          const chipsContainer = document.getElementById('form-meaning-chips');
+
+          if (posEl) posEl.value = d.pos || '형용사';
+          if (meaningEl) meaningEl.value = d.meaning || '';
+          
           document.getElementById('form-priority-select').value = d.priority || 'A';
           document.getElementById('form-collocation-input').value = d.collocation || '';
           document.getElementById('form-trap-input').value = d.trap_point || '';
           document.getElementById('form-example-en-input').value = d.example_en || '';
           document.getElementById('form-example-ko-input').value = d.example_ko || '';
+
+          // Render Clickable Meaning Chips for Multi-Meaning Selection
+          if (chipsContainer && d.meaning_options && d.meaning_options.length > 0) {
+            chipsContainer.innerHTML = '';
+            d.meaning_options.forEach((opt, idx) => {
+              const chip = document.createElement('button');
+              chip.type = 'button';
+              chip.className = 'alpha-btn';
+              chip.style.cssText = 'font-size:0.75rem; padding:3px 8px; background:rgba(99,102,241,0.15); border:1px solid var(--accent-primary); color:var(--text-primary); cursor:pointer; border-radius:10px;';
+              chip.textContent = `+ ${opt}`;
+              chip.addEventListener('click', () => {
+                const curVal = meaningEl.value.trim();
+                if (!curVal) {
+                  meaningEl.value = opt;
+                } else if (!curVal.includes(opt)) {
+                  meaningEl.value = `${curVal}, ${opt}`;
+                }
+              });
+              chipsContainer.appendChild(chip);
+            });
+          }
         } else {
           alert('자동 예문 검색 실패: 직접 입력해 주세요.');
         }
@@ -75,7 +101,7 @@ function setupWordCrudModal() {
     formSubmitBtn.addEventListener('click', async () => {
       const word = document.getElementById('form-word-input').value.trim();
       const meaning = document.getElementById('form-meaning-input').value.trim();
-      const pos = document.getElementById('form-pos-select').value;
+      const pos = document.getElementById('form-pos-input') ? document.getElementById('form-pos-input').value.trim() : '형용사';
       const priority = document.getElementById('form-priority-select').value;
       const topic = document.getElementById('form-topic-input').value.trim() || '일반 업무';
       const collocation = document.getElementById('form-collocation-input').value.trim();
@@ -139,6 +165,8 @@ function openWordCrudModal(mode, wordObj = null) {
   const modal = document.getElementById('word-form-modal');
   const titleEl = document.getElementById('word-form-modal-title');
   const submitBtn = document.getElementById('btn-save-word');
+  const chipsContainer = document.getElementById('form-meaning-chips');
+  if (chipsContainer) chipsContainer.innerHTML = '';
 
   if (mode === 'add') {
     titleEl.textContent = '➕ 새 단어 등록';
@@ -146,7 +174,7 @@ function openWordCrudModal(mode, wordObj = null) {
     editingWordId = null;
 
     document.getElementById('form-word-input').value = '';
-    document.getElementById('form-pos-select').value = '형용사';
+    if (document.getElementById('form-pos-input')) document.getElementById('form-pos-input').value = '형용사';
     document.getElementById('form-meaning-input').value = '';
     document.getElementById('form-priority-select').value = 'A';
     document.getElementById('form-topic-input').value = '일반 업무';
@@ -160,7 +188,7 @@ function openWordCrudModal(mode, wordObj = null) {
     editingWordId = wordObj.id;
 
     document.getElementById('form-word-input').value = wordObj.word || '';
-    document.getElementById('form-pos-select').value = wordObj.pos || '형용사';
+    if (document.getElementById('form-pos-input')) document.getElementById('form-pos-input').value = wordObj.pos || '형용사';
     document.getElementById('form-meaning-input').value = wordObj.meaning || '';
     document.getElementById('form-priority-select').value = wordObj.priority || 'A';
     document.getElementById('form-topic-input').value = wordObj.topic || '일반 업무';

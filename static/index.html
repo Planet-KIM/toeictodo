@@ -605,21 +605,14 @@
         </div>
 
         <div style="display:flex; gap:10px;">
-          <div style="flex:1;">
-            <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">품사 *</label>
-            <select id="form-pos-select" class="playlist-select" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);">
-              <option value="형용사">형용사</option>
-              <option value="부사">부사</option>
-              <option value="명사">명사</option>
-              <option value="동사">동사</option>
-              <option value="전치사">전치사</option>
-              <option value="접속사">접속사</option>
-              <option value="기타어휘">기타어휘</option>
-            </select>
+          <div style="flex:1.2;">
+            <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">품사 * (다중 품사는 콤마 구분)</label>
+            <input type="text" id="form-pos-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="예: 형용사, 명사" value="형용사">
           </div>
           <div style="flex:2;">
             <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">한글 뜻 *</label>
-            <input type="text" id="form-meaning-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="예: 활기찬, 생생한">
+            <input type="text" id="form-meaning-input" class="search-box" style="width:100%; padding:10px; background:rgba(0,0,0,0.25); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="예: 1. 대등한, 비슷한 2. 비교 가능한">
+            <div id="form-meaning-chips" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;"></div>
           </div>
           <div style="flex:1;">
             <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">우선순위 등급</label>

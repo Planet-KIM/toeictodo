@@ -1,7 +1,14 @@
 /* ==========================================================================
-   Vocabs Module - Vocabulary Grid, Dynamic POS Filters & Mobile UX Ergonomics
-   Phase 1-4: Glassmorphism, Compact 1-Line View, Pagination & Alphabet Jumper
+   Vocabs Module - Vocabulary Grid, Dynamic Multi-POS Filters & Mobile UX Ergonomics
+   Phase 1-4 + Multi-POS / Multi-Meaning Support
    ========================================================================== */
+
+function renderPosBadges(posStr) {
+  if (!posStr) return `<span class="tag tag-pos-기타어휘">기타어휘</span>`;
+  const parts = posStr.split(/[,/]/).map(p => p.trim()).filter(Boolean);
+  if (!parts.length) return `<span class="tag tag-pos-기타어휘">기타어휘</span>`;
+  return parts.map(p => `<span class="tag tag-pos-${p}">${p}</span>`).join(' ');
+}
 
 function getFilteredWords() {
   if (!state.allWords || !state.allWords.length) return [];
@@ -9,7 +16,7 @@ function getFilteredWords() {
   const wrongIds = new Set(state.wrongWords.map(w => w.id));
 
   return state.allWords.filter(w => {
-    if (state.currentPosFilter !== 'all' && w.pos !== state.currentPosFilter) return false;
+    if (state.currentPosFilter !== 'all' && (!w.pos || !w.pos.includes(state.currentPosFilter))) return false;
     if (state.currentPrioFilter !== 'all' && w.priority !== state.currentPrioFilter) return false;
 
     const isMem = state.memorizedIds.has(w.id);
@@ -65,8 +72,14 @@ function renderDynamicPosFilterPills() {
 
   const posCounts = {};
   state.allWords.forEach(w => {
-    const p = w.pos || '기타';
-    posCounts[p] = (posCounts[p] || 0) + 1;
+    if (!w.pos) {
+      posCounts['기타어휘'] = (posCounts['기타어휘'] || 0) + 1;
+    } else {
+      const parts = w.pos.split(/[,/]/).map(p => p.trim()).filter(Boolean);
+      parts.forEach(p => {
+        posCounts[p] = (posCounts[p] || 0) + 1;
+      });
+    }
   });
 
   const total = state.allWords.length;
@@ -299,14 +312,13 @@ function renderVocabs() {
       const globalIdx = pageOffset + idx;
       const isMem = state.memorizedIds.has(w.id);
       const prioClass = `badge-${w.priority.toLowerCase()}`;
-      const posTagClass = `tag-pos-${w.pos || '기타어휘'}`;
       return `
         <div class="compact-row ${isMem ? 'memorized' : ''}" data-word-id="${w.id}" data-item-idx="${globalIdx}">
           <div class="compact-left">
             <span class="compact-no">${globalIdx + 1}</span>
             <span class="compact-word">${w.word}</span>
             <span class="badge ${prioClass}">${w.priority}</span>
-            <span class="tag ${posTagClass}">${w.pos}</span>
+            ${renderPosBadges(w.pos)}
             <span class="compact-meaning">${w.meaning}</span>
           </div>
           <div class="compact-right">
@@ -325,14 +337,13 @@ function renderVocabs() {
       const globalIdx = pageOffset + idx;
       const isMem = state.memorizedIds.has(w.id);
       const prioClass = `badge-${w.priority.toLowerCase()}`;
-      const posTagClass = `tag-pos-${w.pos || '기타어휘'}`;
       return `
         <div class="vocab-card ${isMem ? 'memorized' : ''}" data-word-id="${w.id}" data-item-idx="${globalIdx}">
           <div class="card-top">
             <span class="card-word">${w.word}</span>
             <div class="card-tags">
               <span class="badge ${prioClass}">${w.priority}등급</span>
-              <span class="tag ${posTagClass}">${w.pos}</span>
+              ${renderPosBadges(w.pos)}
             </div>
           </div>
           <div class="card-meaning">${w.meaning}</div>
