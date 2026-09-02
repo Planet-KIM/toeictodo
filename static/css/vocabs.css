@@ -1,6 +1,6 @@
 /* ==========================================================================
    Vocabs CSS - Vocabulary Grid, Dynamic POS Filters & Mobile UX Navigation
-   Phase 1-4: Glassmorphism, Compact List View, Pagination & Alphabet Jumper
+   Phase 1-4 + Mobile Fix: iPhone 12 Pro (390px) Ergonomics & Spacing Fixes
    ========================================================================== */
 
 .controls-panel {
@@ -578,4 +578,61 @@ body.light-theme .search-box input {
   background: rgba(16, 185, 129, 0.2);
   color: var(--success);
   border-color: var(--success);
+}
+
+/* iPhone 12 Pro & Mobile Screens (<= 600px) */
+@media (max-width: 600px) {
+  .controls-panel {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+  .playlist-bar {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+  .playlist-left {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  .playlist-right {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .vocab-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .vocab-card {
+    padding: 14px 12px;
+    gap: 8px;
+  }
+  .card-word {
+    font-size: 1.18rem;
+  }
+  .card-meaning {
+    font-size: 0.95rem;
+  }
+  .card-collocation {
+    font-size: 0.78rem;
+    padding: 4px 8px;
+  }
+  .card-footer {
+    padding-top: 8px;
+    gap: 4px;
+  }
+  .card-footer-left {
+    gap: 4px;
+  }
+  .play-from-here-btn {
+    padding: 4px 6px;
+    font-size: 0.7rem;
+  }
+  .check-mem-btn {
+    padding: 5px 8px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
 }

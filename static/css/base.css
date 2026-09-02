@@ -1,6 +1,6 @@
 /* ==========================================================================
    Base CSS - CSS Variables, Glassmorphism, Themes, Reset, Layout & Typography
-   Phase 1: Modern Dark Glassmorphism, Micro-Interactions & POS Tag Color System
+   Phase 1-4 + Mobile Fix: iPhone 12 Pro (390px) Optimized Container Padding
    ========================================================================== */
 
 :root {
@@ -107,6 +107,12 @@ button, input, select, textarea {
   max-width: 1440px;
   margin: 0 auto;
   padding: 24px;
+}
+
+@media (max-width: 600px) {
+  .main-container {
+    padding: 10px 8px;
+  }
 }
 
 .tab-view {

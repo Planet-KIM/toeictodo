@@ -1,6 +1,6 @@
 /* ==========================================================================
    Header CSS - Header, Logo, Navigation Tabs, User Profile, Accent Selector & Icons
-   Phase 2 + 4: Responsive Mobile Layout & Header Overlap Fix
+   Phase 2 + 4 + Mobile Fix: iPhone 12 Pro (390px) 3-Row Header Layout
    ========================================================================== */
 
 .app-header {
@@ -267,21 +267,44 @@ body.light-theme .accent-selector {
   }
 }
 
+/* iPhone 12 Pro & Small Mobile Screens (width <= 600px) */
 @media (max-width: 600px) {
-  .logo-title {
-    font-size: 1rem;
+  .app-header {
+    padding: 8px 12px;
   }
-  .header-actions {
+  .header-container {
     flex-wrap: wrap;
-    justify-content: flex-end;
+    gap: 8px;
+  }
+  .logo {
     gap: 6px;
   }
-  .accent-selector {
-    padding: 2px 6px;
+  .logo-title {
+    font-size: 0.95rem;
   }
-  .accent-btn {
+  .logo-badge {
     padding: 3px 6px;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
+  }
+  .header-actions {
+    margin-left: auto;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .accent-selector {
+    width: 100%;
+    justify-content: center;
+    order: 2;
+    padding: 4px;
+  }
+  .nav-tabs {
+    order: 3;
+    width: 100%;
+    padding: 3px;
+  }
+  .nav-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
   }
   .header-user-badge {
     padding: 4px 8px;
