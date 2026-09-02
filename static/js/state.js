@@ -32,6 +32,7 @@ const state = {
   autoPlayIndex: 0,
   currentPlaylistWords: [],
   speechSpeed: 1.0,
+  is3AccentMode: false, // Phase 2: TOEIC 3-Accent Mode (US -> UK -> AU)
 
   // Flashcard State
   fcDeck: [],

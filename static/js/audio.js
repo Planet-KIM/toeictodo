@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Audio Module - Native Audio Player & Accent Switcher
+   Audio Module - Native Audio Player, Accent Switcher & Exception Safe Async
    ========================================================================== */
 
 let activeAudio = null;
@@ -26,31 +26,55 @@ function setupAccentSelector() {
   });
 }
 
-function playAudioAsync(url, rate = null) {
+/**
+ * Exception-Safe Audio Player with Timeout Race Boundary (Default 3.5s timeout fallback)
+ */
+function playAudioAsync(url, rate = null, timeoutMs = 3500) {
   return new Promise((resolve) => {
-    if (activeAudio) {
-      activeAudio.pause();
-      activeAudio = null;
+    let resolved = false;
+
+    const cleanup = () => {
+      if (resolved) return;
+      resolved = true;
+      if (activeAudio) {
+        activeAudio.pause();
+        activeAudio = null;
+      }
+      resolve();
+    };
+
+    // Timeout safety fallback
+    const timer = setTimeout(() => {
+      console.warn('[Audio] Playback timeout boundary triggered:', url);
+      cleanup();
+    }, timeoutMs);
+
+    try {
+      const audio = new Audio(url);
+      activeAudio = audio;
+
+      const currentRate = rate !== null ? rate : parseFloat(document.getElementById('playlist-speed-select')?.value || '1.0');
+      audio.playbackRate = currentRate;
+
+      audio.onended = () => {
+        clearTimeout(timer);
+        cleanup();
+      };
+      audio.onerror = (err) => {
+        console.warn('[Audio] Audio load error fallback:', err);
+        clearTimeout(timer);
+        cleanup();
+      };
+      audio.play().catch((err) => {
+        console.warn('[Audio] Play promise exception fallback:', err);
+        clearTimeout(timer);
+        cleanup();
+      });
+    } catch (e) {
+      console.warn('[Audio] Exception caught in audio creation:', e);
+      clearTimeout(timer);
+      cleanup();
     }
-    const audio = new Audio(url);
-    activeAudio = audio;
-
-    // Apply playback speed rate
-    const currentRate = rate !== null ? rate : parseFloat(document.getElementById('playlist-speed-select')?.value || '1.0');
-    audio.playbackRate = currentRate;
-
-    audio.onended = () => {
-      activeAudio = null;
-      resolve();
-    };
-    audio.onerror = () => {
-      activeAudio = null;
-      resolve();
-    };
-    audio.play().catch(() => {
-      activeAudio = null;
-      resolve();
-    });
   });
 }
 

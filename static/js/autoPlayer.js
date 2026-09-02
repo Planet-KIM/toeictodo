@@ -1,6 +1,7 @@
 /* ==========================================================================
    Auto-Player Module - Sequential Continuous Auto-Playback Engine
-   Features: Pause/Resume, Start Position Selection, Realtime Speed & Gap Changing
+   Features: Pause/Resume, Start Position Selection, Realtime Speed & Gap Changing,
+   Phase 2: 3-Accent (US -> UK -> AU) Continuous Pronunciation Mode
    ========================================================================== */
 
 function setupAutoPlayer() {
@@ -9,10 +10,28 @@ function setupAutoPlayer() {
   const resetBtn = document.getElementById('auto-reset-btn');
   const startSelect = document.getElementById('playlist-start-select');
   const speedSelect = document.getElementById('playlist-speed-select');
+  const tripleAccentBtn = document.getElementById('accent-triple-toggle');
 
   if (playBtn) playBtn.addEventListener('click', () => startAutoPlayback());
   if (pauseBtn) pauseBtn.addEventListener('click', () => pauseAutoPlayback());
   if (resetBtn) resetBtn.addEventListener('click', () => resetAutoPlayback());
+
+  if (tripleAccentBtn) {
+    tripleAccentBtn.addEventListener('click', () => {
+      state.is3AccentMode = !state.is3AccentMode;
+      if (state.is3AccentMode) {
+        tripleAccentBtn.classList.add('active');
+        tripleAccentBtn.style.background = 'var(--accent-gradient)';
+        tripleAccentBtn.style.color = '#fff';
+        tripleAccentBtn.textContent = '🌐 3국 억양 연속 재생 ON (🇺🇸➔🇬🇧➔🇦🇺)';
+      } else {
+        tripleAccentBtn.classList.remove('active');
+        tripleAccentBtn.style.background = '';
+        tripleAccentBtn.style.color = '';
+        tripleAccentBtn.textContent = '🌐 3국 억양 연속 재생 (미국➔영국➔호주)';
+      }
+    });
+  }
 
   if (startSelect) {
     startSelect.addEventListener('change', (e) => {
@@ -148,9 +167,32 @@ async function runAutoPlayLoop() {
     if (!state.isAutoPlaying) break;
     await new Promise(r => setTimeout(r, 100));
 
-    // 2단계: 해당 국가 원어민 발음 MP3 재생 (미국/영국/호주)
-    const enUrl = `/api/audio?text=${encodeURIComponent(item.word)}&accent=${state.currentAccent}`;
-    await playAudioAsync(enUrl);
+    // 2단계: 영어 단어 재생 (Single Accent vs 3-Accent Consecutive Mode)
+    if (state.is3AccentMode) {
+      // 🇺🇸 미국 억양
+      if (statusText) statusText.textContent = `${itemNum}/${totalCount} 🇺🇸 ${item.word}`;
+      const usUrl = `/api/audio?text=${encodeURIComponent(item.word)}&accent=en-us`;
+      await playAudioAsync(usUrl);
+
+      if (!state.isAutoPlaying) break;
+      await new Promise(r => setTimeout(r, 120));
+
+      // 🇬🇧 영국 억양
+      if (statusText) statusText.textContent = `${itemNum}/${totalCount} 🇬🇧 ${item.word}`;
+      const gbUrl = `/api/audio?text=${encodeURIComponent(item.word)}&accent=en-gb`;
+      await playAudioAsync(gbUrl);
+
+      if (!state.isAutoPlaying) break;
+      await new Promise(r => setTimeout(r, 120));
+
+      // 🇦🇺 호주 억양
+      if (statusText) statusText.textContent = `${itemNum}/${totalCount} 🇦🇺 ${item.word}`;
+      const auUrl = `/api/audio?text=${encodeURIComponent(item.word)}&accent=en-au`;
+      await playAudioAsync(auUrl);
+    } else {
+      const enUrl = `/api/audio?text=${encodeURIComponent(item.word)}&accent=${state.currentAccent}`;
+      await playAudioAsync(enUrl);
+    }
 
     if (!state.isAutoPlaying) break;
     await new Promise(r => setTimeout(r, 150));
@@ -162,8 +204,8 @@ async function runAutoPlayLoop() {
 
     if (!state.isAutoPlaying) break;
 
-    // 실시간 대기 간격 조율 (루프 돌 때마다 최신 간격 값 동적 읽기!)
-    const currentGapMult = parseFloat(document.getElementById('playlist-gap-select').value || '1.0');
+    // 실시간 대기 간격 조율
+    const currentGapMult = parseFloat(document.getElementById('playlist-gap-select')?.value || '1.0');
     const gapMs = Math.round(1000 * currentGapMult);
     await new Promise(r => setTimeout(r, gapMs));
 
