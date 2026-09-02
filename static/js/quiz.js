@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Quiz Module - Quiz Question Generator & Scoring Logic (User DB Scoped)
+   Quiz Module - Part 5 Suffix Derivations, 4-Option Generator & Exception Handling
    ========================================================================== */
 
 function setupQuiz() {
@@ -18,6 +18,72 @@ function startQuizMode(type) {
   if (type) {
     document.getElementById('quiz-type-select').value = type;
   }
+}
+
+/**
+ * Generate Smart Part 5 Suffix Derivations (e.g. available -> availability, availably, avail)
+ * Exception Handling: Falls back cleanly to related words of distinct POS if suffix rules fail.
+ */
+function generatePart5Choices(item) {
+  const correct = item.word.trim();
+  const lower = correct.toLowerCase();
+  const choicesSet = new Set([correct]);
+
+  // Stem extraction helper
+  let stem = lower;
+  if (lower.endsWith('able')) stem = lower.slice(0, -4);
+  else if (lower.endsWith('ible')) stem = lower.slice(0, -4);
+  else if (lower.endsWith('ive')) stem = lower.slice(0, -3);
+  else if (lower.endsWith('al')) stem = lower.slice(0, -2);
+  else if (lower.endsWith('ful')) stem = lower.slice(0, -3);
+  else if (lower.endsWith('ous')) stem = lower.slice(0, -3);
+  else if (lower.endsWith('ent')) stem = lower.slice(0, -3);
+  else if (lower.endsWith('ant')) stem = lower.slice(0, -3);
+  else if (lower.endsWith('ly')) stem = lower.slice(0, -2);
+
+  // Attempt Rule-Based Derivations
+  if (item.pos === '형용사') {
+    choicesSet.add(lower + 'ly');
+    choicesSet.add(stem + 'ability');
+    choicesSet.add(stem + 'ness');
+    choicesSet.add(stem + 'tion');
+  } else if (item.pos === '부사') {
+    if (lower.endsWith('ly')) {
+      choicesSet.add(lower.slice(0, -2)); // adjective base
+    }
+    choicesSet.add(stem + 'tion');
+    choicesSet.add(stem + 'ness');
+  } else if (item.pos === '명사') {
+    choicesSet.add(stem + 'able');
+    choicesSet.add(lower + 'ly');
+    choicesSet.add(stem + 'ize');
+  } else if (item.pos === '동사') {
+    choicesSet.add(stem + 'tion');
+    choicesSet.add(stem + 'able');
+    choicesSet.add(lower + 'ly');
+  }
+
+  // Filter out any invalid / blank entries
+  let choicesList = Array.from(choicesSet).filter(c => c && c.trim().length > 1);
+
+  // Exception Fallback: Fill up to 4 choices using other words of distinct POS from state.allWords
+  if (choicesList.length < 4) {
+    const otherWords = state.allWords.filter(w => w.id !== item.id);
+    otherWords.sort(() => 0.5 - Math.random());
+
+    for (let w of otherWords) {
+      if (!choicesList.includes(w.word)) {
+        choicesList.push(w.word);
+      }
+      if (choicesList.length >= 4) break;
+    }
+  }
+
+  // Limit to 4 choices and shuffle
+  choicesList = choicesList.slice(0, 4);
+  choicesList.sort(() => 0.5 - Math.random());
+
+  return choicesList;
 }
 
 function startQuiz() {
@@ -54,10 +120,9 @@ function startQuiz() {
     if (type === 'word') {
       questionText = item.meaning;
       correctAnswer = item.word;
-      choices = [item.word];
     } else if (type === 'blank') {
       if (item.example_en && item.example_en.toLowerCase().includes(item.word.toLowerCase())) {
-        const regex = new RegExp(item.word, 'gi');
+        const regex = new RegExp(reEscape(item.word), 'gi');
         questionText = item.example_en.replace(regex, '_______');
         questionSub = item.example_ko;
       } else {
@@ -65,24 +130,26 @@ function startQuiz() {
         questionSub = `해석: 직원들은 업무를 처리합니다.`;
       }
       correctAnswer = item.word;
-      choices = [item.word];
+      choices = generatePart5Choices(item);
     } else if (type === 'wrong') {
       questionText = item.word;
       correctAnswer = item.meaning;
-      choices = [item.meaning];
     }
 
-    const otherWords = state.allWords.filter(w => w.id !== item.id);
-    otherWords.sort(() => 0.5 - Math.random());
+    if (type !== 'blank') {
+      const otherWords = state.allWords.filter(w => w.id !== item.id);
+      otherWords.sort(() => 0.5 - Math.random());
 
-    for (let i = 0; i < 3; i++) {
-      if (type === 'word' || type === 'blank') {
-        choices.push(otherWords[i].word);
-      } else {
-        choices.push(otherWords[i].meaning);
+      choices = [correctAnswer];
+      for (let i = 0; i < 3; i++) {
+        if (type === 'word') {
+          choices.push(otherWords[i].word);
+        } else {
+          choices.push(otherWords[i].meaning);
+        }
       }
+      choices.sort(() => 0.5 - Math.random());
     }
-    choices.sort(() => 0.5 - Math.random());
 
     return {
       item,
@@ -105,6 +172,10 @@ function startQuiz() {
   renderQuizQuestion();
 }
 
+function reEscape(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function renderQuizQuestion() {
   const q = state.quizQuestions[state.quizCurrentIdx];
   if (!q) return;
@@ -122,7 +193,7 @@ function renderQuizQuestion() {
   const optionsContainer = document.getElementById('q-options-container');
   optionsContainer.innerHTML = q.choices.map((choice, idx) => `
     <button class="quiz-opt-btn" data-choice-idx="${idx}" data-choice-val="${choice.replace(/"/g, '&quot;')}">
-      ${idx + 1}. ${choice}
+      (${String.fromCharCode(65 + idx)}) ${choice}
     </button>
   `).join('');
 
@@ -151,7 +222,7 @@ function selectQuizAnswer(choiceIdx, selectedAnswer) {
     buttons[choiceIdx].classList.add('wrong');
     state.wrongAnswers.push(q);
     buttons.forEach(btn => {
-      if (btn.textContent.includes(q.correctAnswer)) {
+      if (btn.getAttribute('data-choice-val') === q.correctAnswer) {
         btn.classList.add('correct');
       }
     });
@@ -224,7 +295,6 @@ async function finishQuiz() {
       })
     });
 
-    // Refresh user wrong words list
     await reloadUserWrongWords();
     updateDashboard();
   } catch (e) {
