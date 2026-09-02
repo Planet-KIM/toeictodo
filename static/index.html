@@ -199,8 +199,17 @@
         </div>
       </div>
 
+      <!-- Phase 3: 7-Day Study Activity Streak Chart -->
+      <div class="section-card" style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3>🔥 최근 7일 학습 스트릭 & 일자별 활동량</h3>
+          <span class="badge badge-a" style="font-size:0.85rem; padding:6px 14px;">연속 학습 <strong id="dash-streak-count">0</strong>일 차 🚀</span>
+        </div>
+        <div id="activity-chart-container" style="display:flex; gap:12px; align-items:flex-end; height:120px; padding:10px 14px; background:rgba(0,0,0,0.18); border-radius:var(--radius-sm); border:1px solid var(--border-color);"></div>
+      </div>
+
       <!-- Quick Action Cards -->
-      <div class="dashboard-sections">
+      <div class="dashboard-sections" style="margin-top:20px;">
         <div class="section-card">
           <h3>🎯 750점 맞춤 학습 가이드</h3>
           <ul class="guide-list">

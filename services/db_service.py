@@ -1,6 +1,7 @@
 import sqlite3
 import json
 import unicodedata
+from datetime import datetime, timedelta
 from config import Config
 from services.excel_service import ExcelService
 
@@ -350,6 +351,59 @@ class DbService:
             'user_id': user_id,
             'memorized_ids': memorized_ids,
             'review_counts': review_counts
+        }
+
+    @classmethod
+    def get_user_streak_and_activity(cls, user_id):
+        """Phase 3: Calculate 7-day study activity chart & consecutive streak with exception fallback"""
+        conn = cls.get_connection()
+        cursor = conn.cursor()
+
+        # Fetch last 14 days activity
+        cursor.execute('''
+            SELECT DATE(last_reviewed_at) as log_date, COUNT(*) as cnt
+            FROM user_progress
+            WHERE user_id = ? AND last_reviewed_at IS NOT NULL
+            GROUP BY DATE(last_reviewed_at)
+            ORDER BY DATE(last_reviewed_at) DESC
+        ''', (user_id,))
+        rows = cursor.fetchall()
+        conn.close()
+
+        activity_map = {r['log_date']: r['cnt'] for r in rows if r['log_date']}
+
+        # Calculate Last 7 Days (Mon~Sun or last 7 days)
+        chart_data = []
+        today = datetime.now().date()
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            d_str = d.strftime('%Y-%m-%d')
+            day_label = d.strftime('%m/%d')
+            cnt = activity_map.get(d_str, 0)
+            chart_data.append({
+                'date': d_str,
+                'label': day_label,
+                'count': cnt
+            })
+
+        # Calculate Consecutive Streak
+        streak = 0
+        curr_check = today
+        while True:
+            d_str = curr_check.strftime('%Y-%m-%d')
+            if activity_map.get(d_str, 0) > 0:
+                streak += 1
+                curr_check -= timedelta(days=1)
+            else:
+                # Allow 1-day grace period if today hasn't been logged yet
+                if curr_check == today:
+                    curr_check -= timedelta(days=1)
+                    continue
+                break
+
+        return {
+            'streak_days': streak,
+            'chart_data': chart_data
         }
 
     @classmethod

@@ -91,6 +91,15 @@ def get_user_progress(user_id):
     progress = DbService.get_user_progress(user_id)
     return jsonify(progress)
 
+@api_bp.route('/users/<int:user_id>/activity', methods=['GET'])
+def get_user_activity(user_id):
+    """Phase 3: Get 7-day study activity chart & streak counter with exception handling"""
+    try:
+        data = DbService.get_user_streak_and_activity(user_id)
+        return jsonify({'success': True, 'data': data})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @api_bp.route('/users/<int:user_id>/progress', methods=['POST'])
 def save_user_progress(user_id):
     """Save word progress for specific user"""
