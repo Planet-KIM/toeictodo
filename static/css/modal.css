@@ -16,6 +16,7 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
+  box-sizing: border-box;
 }
 
 .modal-card {
@@ -26,9 +27,11 @@
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 26px;
   position: relative;
   box-shadow: var(--shadow-card);
+  box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -57,11 +60,18 @@
   flex-wrap: wrap;
 }
 
+.modal-body {
+  box-sizing: border-box;
+  width: 100%;
+  overflow-x: hidden;
+}
+
 .modal-body h2 {
   font-size: 2.2rem;
   margin-bottom: 4px;
   color: var(--text-primary);
   letter-spacing: -0.02em;
+  word-break: break-word;
 }
 
 .modal-body h3 {
@@ -69,10 +79,13 @@
   color: var(--accent-primary);
   margin-bottom: 20px;
   font-weight: 600;
+  word-break: break-word;
 }
 
 .modal-section {
   margin-bottom: 16px;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .modal-section h4 {
@@ -90,6 +103,10 @@
   color: var(--text-primary);
   font-weight: 600;
   font-size: 0.95rem;
+  box-sizing: border-box;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  width: 100%;
 }
 
 .warning-box {
@@ -99,6 +116,10 @@
   border-radius: var(--radius-sm);
   color: var(--color-b);
   font-size: 0.9rem;
+  box-sizing: border-box;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  width: 100%;
 }
 
 .example-box {
@@ -106,6 +127,8 @@
   padding: 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .example-en {
@@ -113,11 +136,15 @@
   font-weight: 600;
   margin-bottom: 4px;
   color: var(--text-primary);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .example-ko {
   font-size: 0.88rem;
   color: var(--text-secondary);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .modal-footer {
@@ -127,18 +154,28 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.modal-footer-left {
+  display: flex;
+  gap: 8px;
 }
 
 /* Mobile Devices (<= 600px) Responsive Layout Rules */
 @media (max-width: 600px) {
   .modal-backdrop {
-    padding: 10px;
+    padding: 8px;
   }
   
   .modal-card {
     padding: 18px 14px;
     max-height: 92vh;
     border-radius: var(--radius-md);
+    width: calc(100% - 10px);
+    margin: 0 auto;
+    box-sizing: border-box;
   }
 
   .modal-body h2 {
@@ -154,9 +191,10 @@
     flex-direction: column-reverse;
     align-items: stretch;
     gap: 10px;
+    width: 100%;
   }
 
-  .modal-footer > div {
+  .modal-footer-left {
     display: flex;
     gap: 8px;
     width: 100%;
@@ -166,6 +204,7 @@
     width: 100%;
     justify-content: center;
     text-align: center;
+    box-sizing: border-box;
   }
 
   #modal-edit-btn, #modal-delete-btn {
