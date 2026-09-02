@@ -1,50 +1,19 @@
-# Operating System Files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Python Bytecode & Cache Files
+*.pyc
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Environment & IDE Files
-.env
-.venv
-env/
-venv/
-ENV/
-.idea/
+.DS_Store
 .vscode/
+.idea/
 
-# Excel Temporary & Lock Files
-~$*.xlsx
-~$*.xls
-
-# SQLite Runtime Database (Generated automatically on first run via app.py)
-toeic.db
+# Database Files
 *.db
-*.sqlite3
+*.db-wal
+*.db-shm
 
-# Audio Cache & Media Files (Exclude heavy audio files & caches from git)
+# Heavy media & audio caches
 static/audio_cache/
 audio_cache/
 *.mp3
 *.wav
 *.m4a
-*.aac
-*.ogg
-*.flac
-
-# Non-code Course Assets & PDFs
 *.pdf
 *.pptx
-ETS mp3/
