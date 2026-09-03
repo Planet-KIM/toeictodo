@@ -1,0 +1,38 @@
+/* ==========================================================================
+   Mindmap CSS - Open Source Vis.js Network Vocabulary Mind Map Styles
+   ========================================================================== */
+
+.mindmap-canvas-card {
+  height: 620px;
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-glow);
+  background: rgba(11, 15, 25, 0.75);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  position: relative;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+body.light-theme .mindmap-canvas-card {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.vis-tooltip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: #fff !important;
+  border: 1px solid var(--accent-primary) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 8px 12px !important;
+  font-family: inherit !important;
+  font-size: 0.85rem !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+@media (max-width: 600px) {
+  .mindmap-canvas-card {
+    height: 480px;
+  }
+}

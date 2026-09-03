@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderPairs();
   renderTraps();
+  initMindmap();
 });
 
 // PWA ServiceWorker Registration (iOS Safari & Android Chrome)
@@ -147,5 +148,8 @@ function switchTab(tabName) {
   }
   if (tabName === 'dashboard') {
     updateDashboard();
+  }
+  if (tabName === 'mindmap') {
+    initMindmap();
   }
 }

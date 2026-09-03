@@ -16,6 +16,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   
+  <!-- Open Source Vis.js Network Mindmap Library -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/standalone/umd/vis-network.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/standalone/umd/vis-network.min.js"></script>
+
   <!-- Modular CSS Files -->
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/header.css">
@@ -25,6 +29,7 @@
   <link rel="stylesheet" href="css/flashcards.css">
   <link rel="stylesheet" href="css/quiz.css">
   <link rel="stylesheet" href="css/modal.css">
+  <link rel="stylesheet" href="css/mindmap.css">
 </head>
 <body class="dark-theme">
 
@@ -79,6 +84,10 @@
         <button class="nav-btn" data-tab="vocabs">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
           <span>단어장 (700+)</span>
+        </button>
+        <button class="nav-btn" data-tab="mindmap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          <span>어휘 마인드맵</span>
         </button>
         <button class="nav-btn" data-tab="flashcards">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M7 15h10M7 9h6"></path></svg>
@@ -370,7 +379,31 @@
     </section>
 
 
-    <!-- 3. FLASHCARD VIEW -->
+    <!-- 3. MINDMAP VIEW -->
+    <section id="view-mindmap" class="tab-view">
+      <div class="controls-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 style="font-size:1.35rem; font-weight:800; color:var(--text-primary);">🧠 TOEIC 연관 어휘 마인드맵</h2>
+            <p class="text-muted" style="font-size:0.88rem;">주제별/문법별로 유연하게 연결된 노드를 클릭하면 원어민 음성과 상세 정보가 나타납니다.</p>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <label for="mindmap-topic-select" style="font-size:0.85rem; font-weight:700; color:var(--text-secondary);">주제 선택:</label>
+            <select id="mindmap-topic-select" class="playlist-select" style="padding:8px 12px; font-weight:700;">
+              <option value="conj_prep">🔗 조건·이유·양보 접속사 vs 전치사</option>
+              <option value="business">💼 비즈니스 & 마케팅 필수 어휘</option>
+              <option value="quantity">📊 수량 & 정도 유의어 세트</option>
+              <option value="traps">⚠️ 다품사 출제 함정 어휘</option>
+            </select>
+            <button id="mindmap-fit-btn" class="secondary-btn sm">🔍 화면에 맞추기</button>
+          </div>
+        </div>
+      </div>
+      <div id="mindmap-container" class="mindmap-canvas-card"></div>
+    </section>
+
+
+    <!-- 4. FLASHCARD VIEW -->
     <section id="view-flashcards" class="tab-view">
       <div class="flashcard-container">
         <div class="flashcard-controls">
@@ -433,7 +466,7 @@
     </section>
 
 
-    <!-- 4. QUIZ VIEW -->
+    <!-- 5. QUIZ VIEW -->
     <section id="view-quiz" class="tab-view">
       <div class="quiz-container">
         <div id="quiz-setup" class="quiz-box">
@@ -523,7 +556,7 @@
     </section>
 
 
-    <!-- 5. PAIRS VIEW -->
+    <!-- 6. PAIRS VIEW -->
     <section id="view-pairs" class="tab-view">
       <div class="section-intro">
         <h2>🔗 형용사 - 부사 짝 어휘 세트 (136세트)</h2>
@@ -533,7 +566,7 @@
     </section>
 
 
-    <!-- 6. TRAPS VIEW -->
+    <!-- 7. TRAPS VIEW -->
     <section id="view-traps" class="tab-view">
       <div class="section-intro">
         <h2>⚠️ TOEIC Part 5 빈출 함정 11가지 완전 정리</h2>
@@ -677,6 +710,7 @@
   <script src="js/quiz.js"></script>
   <script src="js/modal.js"></script>
   <script src="js/wordCrudModal.js"></script>
+  <script src="js/mindmap.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
