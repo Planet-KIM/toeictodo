@@ -78,7 +78,7 @@
         </button>
         <button class="nav-btn" data-tab="vocabs">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-          <span>단어장 (550)</span>
+          <span>단어장 (700+)</span>
         </button>
         <button class="nav-btn" data-tab="flashcards">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="M7 15h10M7 9h6"></path></svg>
@@ -257,18 +257,25 @@
             <button id="search-clear" class="clear-btn">&times;</button>
           </div>
 
-          <!-- View Mode & Page Size Selector Controls -->
-          <div style="display:flex; gap:8px; align-items:center;">
+          <!-- View Mode & Mask Mode Selector Controls -->
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <div class="view-mode-toggle" title="리스트 보기 방식 선택">
               <button id="view-mode-card" class="view-mode-btn active">🎴 카드 뷰</button>
               <button id="view-mode-compact" class="view-mode-btn">📋 1줄 요약 뷰</button>
+            </div>
+
+            <!-- Active Recall Blind Masking Toggle -->
+            <div class="view-mode-toggle" title="능동적 인출 암기 가림막 선택">
+              <button id="mask-mode-none" class="view-mode-btn active" title="모두 표시">👁️ 전체 표시</button>
+              <button id="mask-mode-meaning" class="view-mode-btn" title="한글 뜻 블라인드">🙈 뜻 가리기</button>
+              <button id="mask-mode-word" class="view-mode-btn" title="영어 단어 블라인드">🙈 단어 가리기</button>
             </div>
 
             <select id="page-size-select" class="playlist-select" title="페이지당 단어 개수 선택">
               <option value="20" selected>20개씩 보기</option>
               <option value="50">50개씩 보기</option>
               <option value="100">100개씩 보기</option>
-              <option value="all">전체 550개 보기</option>
+              <option value="all">전체 보기</option>
             </select>
 
             <button id="add-new-word-btn" class="primary-btn lg" style="white-space:nowrap; padding: 10px 16px; font-weight:800; background:var(--accent-gradient); flex-shrink:0;">➕ 단어 등록</button>

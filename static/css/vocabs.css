@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Vocabs CSS - Vocabulary Grid, Dynamic POS Filters & Mobile UX Navigation
-   Phase 1-4 + Mobile Fix: iPhone 12 Pro (390px) Ergonomics & Spacing Fixes
+   Vocabs CSS - Vocabulary Grid, Dynamic POS Filters & Mobile UX Ergonomics
+   Phase 1-4 + Active Recall Blind Masking Mode Styles
    ========================================================================== */
 
 .controls-panel {
@@ -54,7 +54,7 @@
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
 }
 
-/* View Mode Pill Toggle */
+/* View Mode & Mask Mode Pill Toggle */
 .view-mode-toggle {
   display: flex;
   background: rgba(0, 0, 0, 0.3);
@@ -79,6 +79,26 @@
 .view-mode-btn.active {
   background: var(--accent-primary);
   color: #ffffff;
+}
+
+/* Active Recall Masking / Unmasking Styles */
+.masked-content {
+  filter: blur(6.5px);
+  user-select: none;
+  background: rgba(99, 102, 241, 0.18);
+  border-radius: 4px;
+  padding: 2px 6px;
+  transition: filter 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s ease;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.masked-content:hover,
+.masked-content:active,
+.masked-content.unmasked {
+  filter: blur(0);
+  background: transparent;
+  user-select: text;
 }
 
 /* Pagination Control Bar */

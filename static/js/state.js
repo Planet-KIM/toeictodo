@@ -27,8 +27,9 @@ const state = {
   currentStatusFilter: 'all',
   searchQuery: '',
   alphabetFilter: 'all',
-  viewMode: 'card',   // 'card' or 'compact'
-  pageSize: 20,       // 20, 50, 100, or 'all'
+  viewMode: 'card',    // 'card' or 'compact'
+  maskMode: 'none',    // 'none', 'meaning', or 'word' (Active Recall Blind Masking Mode)
+  pageSize: 20,        // 20, 50, 100, or 'all'
   currentPage: 1,
 
   // Playlist & Speed State

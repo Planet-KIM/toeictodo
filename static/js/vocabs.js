@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Vocabs Module - Vocabulary Grid, Dynamic Multi-POS Filters & Mobile UX Ergonomics
-   Phase 1-4 + Multi-POS / Multi-Meaning Support
+   Vocabs Module - Vocabulary Grid, Dynamic Multi-POS Filters & Active Recall Masking
+   Phase 1-4 + Multi-POS / Multi-Meaning + Active Recall Blind Masking
    ========================================================================== */
 
 function renderPosBadges(posStr) {
@@ -219,6 +219,24 @@ function setupFilters() {
     });
   }
 
+  // Active Recall Mask Mode Toggle Listeners
+  const maskNoneBtn = document.getElementById('mask-mode-none');
+  const maskMeaningBtn = document.getElementById('mask-mode-meaning');
+  const maskWordBtn = document.getElementById('mask-mode-word');
+
+  if (maskNoneBtn && maskMeaningBtn && maskWordBtn) {
+    [maskNoneBtn, maskMeaningBtn, maskWordBtn].forEach(btn => {
+      btn.addEventListener('click', () => {
+        [maskNoneBtn, maskMeaningBtn, maskWordBtn].forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (btn.id === 'mask-mode-meaning') state.maskMode = 'meaning';
+        else if (btn.id === 'mask-mode-word') state.maskMode = 'word';
+        else state.maskMode = 'none';
+        renderVocabs();
+      });
+    });
+  }
+
   // Page Size Select Listener
   const pageSizeSelect = document.getElementById('page-size-select');
   if (pageSizeSelect) {
@@ -305,6 +323,21 @@ function renderVocabs() {
     displayWords = allFiltered.slice(pageOffset, pageOffset + state.pageSize);
   }
 
+  // Active Recall Masking Helpers
+  const getWordHtml = (wText) => {
+    if (state.maskMode === 'word') {
+      return `<span class="masked-content" title="클릭하여 단어 확인">${wText}</span>`;
+    }
+    return wText;
+  };
+
+  const getMeaningHtml = (mText) => {
+    if (state.maskMode === 'meaning') {
+      return `<span class="masked-content" title="클릭하여 뜻 확인">${mText}</span>`;
+    }
+    return mText;
+  };
+
   // Render Compact 1-Line View Mode
   if (state.viewMode === 'compact') {
     container.className = 'vocab-grid compact-mode';
@@ -316,10 +349,10 @@ function renderVocabs() {
         <div class="compact-row ${isMem ? 'memorized' : ''}" data-word-id="${w.id}" data-item-idx="${globalIdx}">
           <div class="compact-left">
             <span class="compact-no">${globalIdx + 1}</span>
-            <span class="compact-word">${w.word}</span>
+            <span class="compact-word">${getWordHtml(w.word)}</span>
             <span class="badge ${prioClass}">${w.priority}</span>
             ${renderPosBadges(w.pos)}
-            <span class="compact-meaning">${w.meaning}</span>
+            <span class="compact-meaning">${getMeaningHtml(w.meaning)}</span>
           </div>
           <div class="compact-right">
             <button class="speech-btn" data-tts-word="${w.word}" title="원어민 발음 듣기">🔊</button>
@@ -340,13 +373,13 @@ function renderVocabs() {
       return `
         <div class="vocab-card ${isMem ? 'memorized' : ''}" data-word-id="${w.id}" data-item-idx="${globalIdx}">
           <div class="card-top">
-            <span class="card-word">${w.word}</span>
+            <span class="card-word">${getWordHtml(w.word)}</span>
             <div class="card-tags">
               <span class="badge ${prioClass}">${w.priority}등급</span>
               ${renderPosBadges(w.pos)}
             </div>
           </div>
-          <div class="card-meaning">${w.meaning}</div>
+          <div class="card-meaning">${getMeaningHtml(w.meaning)}</div>
           ${w.collocation ? `<div class="card-collocation">💡 ${w.collocation}</div>` : ''}
           <div class="card-footer">
             <div class="card-footer-left">
@@ -366,8 +399,16 @@ function renderVocabs() {
   container.querySelectorAll('.vocab-card, .compact-row').forEach(card => {
     const wordId = card.getAttribute('data-word-id');
     card.addEventListener('click', (e) => {
-      if (e.target.closest('button')) return;
+      if (e.target.closest('button') || e.target.closest('.masked-content')) return;
       openModal(wordId);
+    });
+  });
+
+  // Attach Mask Unmask Click Handlers
+  container.querySelectorAll('.masked-content').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      el.classList.toggle('unmasked');
     });
   });
 
