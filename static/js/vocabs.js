@@ -85,7 +85,7 @@ function renderDynamicPosFilterPills() {
   const total = state.allWords.length;
   let html = `<button class="filter-pill ${state.currentPosFilter === 'all' ? 'active' : ''}" data-pos="all">전체 (${total})</button>`;
 
-  const knownOrder = ['형용사', '부사', '명사', '동사', '전치사', '접속사'];
+  const knownOrder = ['형용사', '부사', '접속사', '접속부사', '전치사', '관계사', '명사', '동사'];
   const allPosKeys = Object.keys(posCounts);
 
   knownOrder.forEach(p => {
