@@ -7,7 +7,7 @@ let networkInstance = null;
 const MINDMAP_CLUSTERS = {
   conj_prep: {
     title: '🔗 조건·이유·양보 접속사 vs 전치사',
-    centerNode: { id: 'root', label: '접속사 · 전치사 · 접속부사', color: '#6366f1', size: 30 },
+    centerNode: { id: 'root_conj_prep', label: '접속사 · 전치사 · 접속부사', color: '#6366f1' },
     groups: [
       {
         id: 'g_reason',
@@ -37,7 +37,7 @@ const MINDMAP_CLUSTERS = {
   },
   business: {
     title: '💼 비즈니스 & 마케팅 필수 어휘',
-    centerNode: { id: 'root', label: '비즈니스 핵심 어휘', color: '#8b5cf6', size: 30 },
+    centerNode: { id: 'root_business', label: '비즈니스 핵심 어휘', color: '#8b5cf6' },
     groups: [
       {
         id: 'g_price',
@@ -61,7 +61,7 @@ const MINDMAP_CLUSTERS = {
   },
   quantity: {
     title: '📊 수량 & 정도 유의어 세트',
-    centerNode: { id: 'root', label: '수량 · 정도 유의어', color: '#ec4899', size: 30 },
+    centerNode: { id: 'root_quantity', label: '수량 · 정도 유의어', color: '#ec4899' },
     groups: [
       {
         id: 'g_great',
@@ -79,7 +79,7 @@ const MINDMAP_CLUSTERS = {
   },
   traps: {
     title: '⚠️ 다품사 출제 함정 어휘',
-    centerNode: { id: 'root', label: '다품사 함정 어휘', color: '#ff4757', size: 30 },
+    centerNode: { id: 'root_traps', label: '다품사 함정 어휘', color: '#ff4757' },
     groups: [
       {
         id: 'g_time_prep',
@@ -118,7 +118,7 @@ function initMindmap() {
     });
   }
 
-  renderMindmap('conj_prep');
+  renderMindmap(topicSelect ? topicSelect.value : 'conj_prep');
 }
 
 function renderMindmap(clusterKey) {
@@ -126,11 +126,11 @@ function renderMindmap(clusterKey) {
   if (!container || typeof vis === 'undefined') return;
 
   const cluster = MINDMAP_CLUSTERS[clusterKey] || MINDMAP_CLUSTERS['conj_prep'];
-  const nodes = [];
+  const nodesMap = new Map();
   const edges = [];
 
-  // Root Center Node
-  nodes.push({
+  // 1. Root Center Node
+  nodesMap.set(cluster.centerNode.id, {
     id: cluster.centerNode.id,
     label: cluster.centerNode.label,
     shape: 'box',
@@ -144,9 +144,9 @@ function renderMindmap(clusterKey) {
     shadow: { enabled: true, color: 'rgba(99, 102, 241, 0.6)', size: 15 }
   });
 
-  // Groups and Words
+  // 2. Groups and Word Nodes
   cluster.groups.forEach((grp) => {
-    nodes.push({
+    nodesMap.set(grp.id, {
       id: grp.id,
       label: grp.label,
       shape: 'ellipse',
@@ -166,17 +166,21 @@ function renderMindmap(clusterKey) {
       length: 140
     });
 
-    grp.words.forEach((wStr) => {
-      // Find matching word object in state.allWords
-      const matched = state.allWords.find(w => w.word.toLowerCase() === wStr.toLowerCase());
-      const wordId = matched ? matched.id : `w_${wStr}`;
-      const posTag = matched ? matched.pos : '기타';
-      const meaning = matched ? matched.meaning : '';
+    grp.words.forEach((wStr, wIdx) => {
+      const nodeId = `node_${grp.id}_${wIdx}_${wStr.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      const matched = state.allWords && state.allWords.length 
+        ? state.allWords.find(w => w.word.toLowerCase() === wStr.toLowerCase()) 
+        : null;
 
-      nodes.push({
-        id: wordId,
+      const posTag = matched ? matched.pos : '어휘';
+      const meaning = matched ? matched.meaning : '';
+      const realWordId = matched ? matched.id : null;
+
+      nodesMap.set(nodeId, {
+        id: nodeId,
+        realWordId: realWordId,
         wordText: wStr,
-        label: `${wStr}\n(${meaning || posTag})`,
+        label: meaning ? `${wStr}\n(${meaning})` : `${wStr}\n[${posTag}]`,
         shape: 'box',
         margin: 10,
         color: {
@@ -190,8 +194,8 @@ function renderMindmap(clusterKey) {
 
       edges.push({
         from: grp.id,
-        to: wordId,
-        color: { color: 'rgba(255, 255, 255, 0.2)', highlight: grp.color },
+        to: nodeId,
+        color: { color: 'rgba(255, 255, 255, 0.25)', highlight: grp.color },
         width: 1.5,
         length: 110,
         dashes: true
@@ -199,8 +203,10 @@ function renderMindmap(clusterKey) {
     });
   });
 
+  const nodesArray = Array.from(nodesMap.values());
+
   const data = {
-    nodes: new vis.DataSet(nodes),
+    nodes: new vis.DataSet(nodesArray),
     edges: new vis.DataSet(edges)
   };
 
@@ -215,7 +221,7 @@ function renderMindmap(clusterKey) {
       maxVelocity: 50,
       solver: 'barnesHut',
       timestep: 0.5,
-      stabilization: { iterations: 150 }
+      stabilization: { iterations: 120 }
     },
     interaction: {
       hover: true,
@@ -234,18 +240,13 @@ function renderMindmap(clusterKey) {
   // Click Event Handler: TTS Audio & Detail Modal
   networkInstance.on('click', (params) => {
     if (params.nodes.length > 0) {
-      const nodeId = params.nodes[0];
+      const clickedId = params.nodes[0];
+      const targetNode = nodesArray.find(n => n.id === clickedId);
 
-      // If it's a word node (not root/group)
-      if (typeof nodeId === 'number' || (typeof nodeId === 'string' && nodeId.startsWith('w_'))) {
-        const item = state.allWords.find(w => w.id === nodeId || w.word.toLowerCase() === nodeId.replace('w_', '').toLowerCase());
-
-        if (item) {
-          playNativeAudio(item.word);
-          openModal(item.id);
-        } else {
-          const wText = nodes.find(n => n.id === nodeId)?.wordText || nodeId;
-          playNativeAudio(wText);
+      if (targetNode && targetNode.wordText) {
+        playNativeAudio(targetNode.wordText);
+        if (targetNode.realWordId) {
+          openModal(targetNode.realWordId);
         }
       }
     }
