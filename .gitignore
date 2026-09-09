@@ -22,3 +22,7 @@ audio_cache/
 *.pdf
 *.pptx
 *.zip
+
+# Application Log Files
+logs/
+*.log

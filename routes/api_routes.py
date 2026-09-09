@@ -6,7 +6,9 @@ from openpyxl import Workbook
 from services.db_service import DbService
 from services.audio_cache_service import AudioCacheService
 from services.auto_fetch_service import AutoFetchService
+from utils.logger import get_logger
 
+logger = get_logger('toeictodo')
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
 @api_bp.route('/words', methods=['GET'])
@@ -23,6 +25,7 @@ def add_word():
         return jsonify({'error': 'word and meaning are required'}), 400
 
     new_word = DbService.add_word(data)
+    logger.info(f"[API] Word registered: '{data.get('word')}' (ID: {new_word.get('id')})")
     return jsonify({'success': True, 'word': new_word}), 201
 
 # --------------------------------------------------------------------------
@@ -50,93 +53,111 @@ def export_words_excel():
         wb.save(out)
         out.seek(0)
 
+        logger.info(f"[API] Exported {len(words)} words to Excel file.")
+
         return Response(
             out.getvalue(),
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             headers={"Content-Disposition": "attachment; filename=TOEIC_550_Master_Export.xlsx"}
         )
     except Exception as e:
+        logger.error(f"[API] Excel export error: {e}")
         return jsonify({'error': f"Excel export error: {str(e)}"}), 500
 
 @api_bp.route('/words/export/json', methods=['GET'])
 def export_words_json():
-    """Phase 4: Export words and pairs as JSON backup file"""
+    """Phase 4: Export vocabulary database as JSON backup file"""
     try:
         words = DbService.get_words()
-        pairs = DbService.get_pairs()
-        traps = DbService.get_traps()
-
+        users = DbService.get_users()
         backup_data = {
             'version': '1.0',
-            'exported_at': str(request.date or ''),
+            'word_count': len(words),
             'words': words,
-            'pairs': pairs,
-            'traps': traps
+            'users': users
         }
-
-        json_str = json.dumps(backup_data, ensure_ascii=False, indent=2)
+        logger.info(f"[API] Exported JSON backup with {len(words)} words.")
         return Response(
-            json_str,
+            json.dumps(backup_data, ensure_ascii=False, indent=2),
             mimetype="application/json",
-            headers={"Content-Disposition": "attachment; filename=toeic_backup.json"}
+            headers={"Content-Disposition": "attachment; filename=TOEIC_Backup_Words.json"}
         )
     except Exception as e:
+        logger.error(f"[API] JSON export error: {e}")
         return jsonify({'error': f"JSON export error: {str(e)}"}), 500
 
 @api_bp.route('/words/import/json', methods=['POST'])
 def import_words_json():
-    """Phase 4: Restore backup JSON with validation & exception handling"""
+    """Phase 4: Restore/import vocabulary database from uploaded JSON backup file"""
     try:
-        file = request.files.get('file')
-        if not file:
-            return jsonify({'error': '업로드할 백업 파일(.json)을 선택해 주세요.'}), 400
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+
+        file = request.files['file']
+        if not file.filename.endswith('.json'):
+            return jsonify({'error': 'File format must be .json'}), 400
 
         content = file.read().decode('utf-8')
         data = json.loads(content)
+        words = data.get('words', [])
 
-        if not isinstance(data, dict) or 'words' not in data or not isinstance(data['words'], list):
-            return jsonify({'error': '올바른 단어장 백업 파일(.json) 형식이 아닙니다. (words 데이터 누락)'}), 400
+        if not words or not isinstance(words, list):
+            return jsonify({'error': 'Invalid JSON backup format'}), 400
 
-        words = data['words']
         restored_count = 0
         for w in words:
             if w.get('word') and w.get('meaning'):
                 DbService.add_word(w)
                 restored_count += 1
 
-        return jsonify({'success': True, 'count': restored_count})
-    except json.JSONDecodeError:
-        return jsonify({'error': '손상되었거나 올바르지 않은 JSON 데이터입니다.'}), 400
+        logger.info(f"[API] Restored {restored_count} words from JSON backup file.")
+        return jsonify({'success': True, 'restored_count': restored_count})
     except Exception as e:
-        return jsonify({'error': f"복원 중 오류 발생: {str(e)}"}), 500
+        logger.error(f"[API] JSON import error: {e}")
+        return jsonify({'error': f"JSON import error: {str(e)}"}), 500
 
+# --------------------------------------------------------------------------
+# Word Search / Auto-Fetch / Single Word Operations
+# --------------------------------------------------------------------------
 @api_bp.route('/words/auto-fetch', methods=['GET'])
 def auto_fetch_word():
-    """Auto fetch meaning, part-of-speech, and TOEIC example sentence for given word"""
+    """Auto-fetch word details and examples using AutoFetchService"""
     word = request.args.get('word', '').strip()
     if not word:
-        return jsonify({'error': 'word parameter is required'}), 400
+        return jsonify({'error': 'Word parameter is required'}), 400
 
-    result = AutoFetchService.fetch_word_details(word)
-    if not result:
-        return jsonify({'error': 'Failed to auto-fetch details'}), 404
+    try:
+        details = AutoFetchService.fetch_word_details(word)
+        return jsonify({'success': True, 'data': details})
+    except Exception as e:
+        logger.error(f"[API] Auto-fetch error for '{word}': {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
-    return jsonify({'success': True, 'data': result})
+@api_bp.route('/words/<word_id>', methods=['GET'])
+def get_word(word_id):
+    """Retrieve a single word from SQLite DB"""
+    words = DbService.get_words()
+    word = next((w for w in words if str(w['id']) == str(word_id)), None)
+    if not word:
+        return jsonify({'error': 'Word not found'}), 404
+    return jsonify(word)
 
 @api_bp.route('/words/<word_id>', methods=['PUT'])
 def update_word(word_id):
-    """Update existing word meaning, example, pos, and traps"""
+    """Update a word in SQLite DB"""
     data = request.get_json() or {}
     if not data.get('word') or not data.get('meaning'):
         return jsonify({'error': 'word and meaning are required'}), 400
 
     updated = DbService.update_word(word_id, data)
+    logger.info(f"[API] Word updated ID {word_id}: '{data.get('word')}'")
     return jsonify({'success': True, 'word': updated})
 
 @api_bp.route('/words/<word_id>', methods=['DELETE'])
 def delete_word(word_id):
     """Delete a word from SQLite DB"""
     DbService.delete_word(word_id)
+    logger.info(f"[API] Word deleted ID {word_id}")
     return jsonify({'success': True})
 
 @api_bp.route('/pairs', methods=['GET'])
@@ -169,8 +190,10 @@ def create_user():
         return jsonify({'error': 'User name is required'}), 400
     try:
         user = DbService.create_user(name)
+        logger.info(f"[API] New user registered: '{name}' (ID: {user['id']})")
         return jsonify({'success': True, 'user': user}), 201
     except Exception as e:
+        logger.warning(f"[API] Create user failed for '{name}': {e}")
         return jsonify({'error': str(e)}), 400
 
 @api_bp.route('/users/<int:user_id>/progress', methods=['GET'])
@@ -186,15 +209,16 @@ def get_user_activity(user_id):
         data = DbService.get_user_streak_and_activity(user_id)
         return jsonify({'success': True, 'data': data})
     except Exception as e:
+        logger.error(f"[API] Get activity error for user {user_id}: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/users/<int:user_id>/progress', methods=['POST'])
 def save_user_progress(user_id):
-    """Save word progress for specific user"""
+    """Save user word progress (memorized state & review increment)"""
     data = request.get_json() or {}
     word_id = data.get('word_id')
     is_memorized = data.get('is_memorized', False)
-    toggle = data.get('toggle', True)
+    toggle = data.get('toggle', False)
 
     if not word_id:
         return jsonify({'error': 'word_id is required'}), 400
@@ -212,6 +236,7 @@ def save_user_progress_batch(user_id):
         is_memorized = item.get('is_memorized', False)
         if word_id:
             DbService.save_user_progress(user_id, word_id, is_memorized, toggle=False)
+    logger.info(f"[API] Batch synced {len(items)} progress items for user {user_id}")
     return jsonify({'success': True, 'count': len(items)})
 
 @api_bp.route('/users/<int:user_id>/quiz-results', methods=['POST'])
@@ -224,6 +249,7 @@ def save_quiz_result(user_id):
     wrong_word_ids = data.get('wrong_word_ids', [])
 
     DbService.save_quiz_result(user_id, quiz_type, score, total, wrong_word_ids)
+    logger.info(f"[API] Quiz result saved for user {user_id}: {score}/{total} ({quiz_type})")
     return jsonify({'success': True})
 
 @api_bp.route('/users/<int:user_id>/wrong-words', methods=['GET'])
@@ -251,7 +277,7 @@ def get_audio_proxy():
         audio_data, cache_relative_url = AudioCacheService.get_or_fetch_audio(text, accent)
         return Response(audio_data, mimetype='audio/mpeg')
     except Exception as e:
-        print(f"[Audio Proxy Error] {e}")
+        logger.error(f"[Audio Proxy Error] text='{text}', accent='{accent}': {e}")
         return jsonify({'error': 'Failed to fetch audio stream'}), 500
 
 @api_bp.route('/audio/preload-list', methods=['GET'])
