@@ -218,18 +218,43 @@ function renderQuizQuestion() {
   // Render Voice STT Mode
   if (q.type === 'voice') {
     optionsContainer.innerHTML = `
-      <div class="voice-mic-container" style="grid-column: 1 / -1;">
-        <button id="voice-start-btn" class="voice-mic-btn">
-          🎤 음성으로 정답 말하기 (터치)
-        </button>
+      <div class="voice-mic-container" style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:14px; align-items:center;">
         <div id="voice-speech-status" class="voice-speech-box">
-          [🗣️ 마이크 버튼을 누르고 한국어 뜻을 편하게 말씀하세요]
+          🗣️ 마이크 버튼을 누르고 한국어 뜻을 편하게 말씀하세요
         </div>
+        <button id="voice-start-btn" class="voice-mic-btn">
+          🎤 음성 정답 말하기 (터치)
+        </button>
       </div>
     `;
 
     const micBtn = document.getElementById('voice-start-btn');
     const statusBox = document.getElementById('voice-speech-status');
+
+    let silenceTimer = null;
+    let recognition = null;
+    let isEvaluated = false;
+
+    const clearSilenceTimer = () => {
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
+    };
+
+    const startSilenceTimer = (durationSeconds = 5) => {
+      clearSilenceTimer();
+      silenceTimer = setTimeout(() => {
+        if (!isEvaluated && recognition) {
+          try { recognition.stop(); } catch(e) {}
+          micBtn.classList.remove('listening');
+          micBtn.disabled = false;
+          micBtn.textContent = '🎤 음성 다시 말하기';
+          statusBox.innerHTML = `⏱️ <strong style="color:var(--warning);">5초 동안 음성이 인식되지 않아 취소되었습니다.</strong> 다시 시도해 주세요.`;
+          statusBox.classList.remove('active-speech');
+        }
+      }, durationSeconds * 1000);
+    };
 
     if (micBtn) {
       micBtn.addEventListener('click', async () => {
@@ -239,37 +264,94 @@ function renderQuizQuestion() {
           return;
         }
 
-        const recognition = new SpeechRecognition();
+        isEvaluated = false;
+        recognition = new SpeechRecognition();
         recognition.lang = 'ko-KR';
-        recognition.interimResults = false;
+        recognition.interimResults = true; // Stream real-time spoken text!
         recognition.maxAlternatives = 1;
 
         micBtn.classList.add('listening');
         micBtn.disabled = true;
         micBtn.textContent = '🎙️ 음성 듣는 중... (말씀하세요)';
-        statusBox.textContent = '🎙️ 목소리를 듣고 있습니다...';
+        statusBox.innerHTML = `🎙️ 목소리를 듣고 있습니다... <span style="font-size:0.85rem; opacity:0.8;">(5초 무음시 자동 취소)</span>`;
+        statusBox.classList.add('active-speech');
+
+        // Start 5-second silence timer
+        startSilenceTimer(5);
 
         recognition.onresult = (event) => {
-          micBtn.classList.remove('listening');
-          micBtn.disabled = false;
-          micBtn.textContent = '🎤 음성으로 다시 말하기';
+          let interimTranscript = '';
+          let finalTranscript = '';
 
-          const spokenText = event.results[0][0].transcript;
-          statusBox.textContent = `🗣️ 인식된 음성: "${spokenText}"`;
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcriptChunk = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcriptChunk;
+            } else {
+              interimTranscript += transcriptChunk;
+            }
+          }
 
-          // Evaluate using Korean Fuzzy Matcher
-          const verdict = checkKoreanSemanticMatch(spokenText, q.item.meaning);
-          handleVoiceQuizVerdict(verdict, spokenText);
+          const currentSpokenText = (finalTranscript || interimTranscript).trim();
+
+          if (currentSpokenText) {
+            // Real-time spoken text display ABOVE the button!
+            statusBox.innerHTML = `💬 인식 중: <span class="speech-highlight">"${currentSpokenText}"</span>`;
+            statusBox.classList.add('active-speech');
+
+            // Reset 5s silence timer while user is actively speaking
+            startSilenceTimer(5);
+          }
+
+          if (finalTranscript.trim() && !isEvaluated) {
+            isEvaluated = true;
+            clearSilenceTimer();
+
+            micBtn.classList.remove('listening');
+            micBtn.disabled = false;
+            micBtn.textContent = '🎤 음성 다시 말하기';
+            statusBox.innerHTML = `🗣️ 인식 완료: <span class="speech-highlight">"${finalTranscript.trim()}"</span>`;
+            statusBox.classList.remove('active-speech');
+
+            // Evaluate using Korean Fuzzy Matcher
+            const verdict = checkKoreanSemanticMatch(finalTranscript.trim(), q.item.meaning);
+            handleVoiceQuizVerdict(verdict, finalTranscript.trim());
+          }
         };
 
-        recognition.onerror = async (e) => {
+        recognition.onerror = (e) => {
+          clearSilenceTimer();
           micBtn.classList.remove('listening');
           micBtn.disabled = false;
           micBtn.textContent = '🎤 음성 다시 말하기';
-          statusBox.textContent = '⚠️ 음성 인식 실패: 마이크 허용 설정을 확인하거나 주소창 왼쪽 자물쇠/설정을 확인해 주세요.';
+          statusBox.classList.remove('active-speech');
+
+          if (e.error === 'no-speech') {
+            statusBox.innerHTML = '⏱️ <strong style="color:var(--warning);">5초 동안 음성이 인식되지 않았습니다.</strong> 다시 시도해 주세요.';
+          } else {
+            statusBox.innerHTML = '⚠️ 음성 인식 실패: 마이크 허용 설정을 확인하거나 주소창 왼쪽 자물쇠/설정을 확인해 주세요.';
+          }
         };
 
-        recognition.start();
+        recognition.onend = () => {
+          clearSilenceTimer();
+          if (!isEvaluated) {
+            micBtn.classList.remove('listening');
+            micBtn.disabled = false;
+            if (!micBtn.textContent.includes('다시 말하기')) {
+              micBtn.textContent = '🎤 음성 다시 말하기';
+            }
+            statusBox.classList.remove('active-speech');
+          }
+        };
+
+        try {
+          recognition.start();
+        } catch(err) {
+          clearSilenceTimer();
+          micBtn.classList.remove('listening');
+          micBtn.disabled = false;
+        }
       });
     }
   } else {
