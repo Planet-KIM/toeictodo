@@ -1,69 +1,69 @@
 /* ==========================================================================
-   Base CSS - CSS Variables, Glassmorphism, Themes, Reset, Layout & Typography
-   Phase 1-4 + Mobile Fix: iPhone 12 Pro (390px) Optimized Container Padding
+   Base CSS - Warm Gamified Design System, Glassmorphism, Themes, Layout & Typography
+   Phase 1-4 + Gamified Aesthetic Redesign (Soft Pill Rounding & Rich Palette)
    ========================================================================== */
 
 :root {
   /* Color Palette - Dark Theme (Default) */
-  --bg-primary: #0b0f19;
-  --bg-secondary: #161e2e;
-  --bg-card: rgba(22, 30, 46, 0.65);
-  --bg-card-hover: rgba(30, 41, 59, 0.85);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(99, 102, 241, 0.4);
+  --bg-primary: #090d16;
+  --bg-secondary: #131b2e;
+  --bg-card: rgba(19, 27, 46, 0.72);
+  --bg-card-hover: rgba(30, 41, 68, 0.9);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-glow: rgba(99, 102, 241, 0.45);
   
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-secondary: #a0aec0;
   --text-muted: #64748b;
   
   /* Brand Accent Colors & Gradients */
   --accent-primary: #6366f1; /* Indigo */
-  --accent-secondary: #8b5cf6; /* Purple */
-  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-  --accent-glow: 0 8px 24px -4px rgba(99, 102, 241, 0.4);
+  --accent-secondary: #a855f7; /* Purple */
+  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  --accent-glow: 0 8px 24px -4px rgba(99, 102, 241, 0.5);
   
   /* Status & Priority Colors */
-  --color-a: #ff4757; /* Radiant Crimson Coral */
-  --color-a-bg: rgba(255, 71, 87, 0.15);
-  --color-b: #ffa502; /* Electric Amber */
-  --color-b-bg: rgba(255, 165, 2, 0.15);
-  --color-c: #2ed573; /* Vibrant Emerald */
-  --color-c-bg: rgba(46, 213, 115, 0.15);
+  --color-a: #fbbf24; /* Radiant Gold Accent */
+  --color-a-bg: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(217, 119, 6, 0.12));
+  --color-b: #c084fc; /* Electric Violet Accent */
+  --color-b-bg: linear-gradient(135deg, rgba(168, 85, 247, 0.22), rgba(147, 51, 234, 0.12));
+  --color-c: #34d399; /* Vibrant Emerald Accent */
+  --color-c-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.22), rgba(5, 150, 105, 0.12));
   
   /* POS Accent Tag Colors */
-  --adj-color: #3b82f6; /* Blue */
-  --adv-color: #a855f7; /* Purple */
-  --noun-color: #06b6d4; /* Cyan */
-  --verb-color: #f59e0b; /* Amber */
-  --prep-color: #ec4899; /* Rose Pink */
-  --conj-color: #10b981; /* Emerald */
+  --adj-color: #60a5fa; /* Blue */
+  --adv-color: #c084fc; /* Purple */
+  --noun-color: #22d3ee; /* Cyan */
+  --verb-color: #fbbf24; /* Amber */
+  --prep-color: #f472b6; /* Rose Pink */
+  --conj-color: #34d399; /* Emerald */
   
-  --success: #2ed573;
-  --error: #ff4757;
+  --success: #34d399;
+  --error: #f87171;
   
-  /* Layout & Glassmorphism Tokens */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.45);
-  --shadow-hover: 0 16px 36px -4px rgba(99, 102, 241, 0.28), 0 6px 12px -2px rgba(0, 0, 0, 0.2);
-  --backdrop-blur: blur(16px);
-  --transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Layout & Soft Pill Glassmorphism Tokens */
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 26px;
+  --shadow-card: 0 12px 32px -6px rgba(0, 0, 0, 0.5);
+  --shadow-hover: 0 20px 40px -6px rgba(99, 102, 241, 0.35), 0 8px 16px -2px rgba(0, 0, 0, 0.25);
+  --backdrop-blur: blur(18px);
+  --transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Light Theme Overrides */
 body.light-theme {
-  --bg-primary: #f8fafc;
+  --bg-primary: #f1f5f9;
   --bg-secondary: #ffffff;
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --bg-card-hover: rgba(241, 245, 249, 0.95);
+  --bg-card: rgba(255, 255, 255, 0.88);
+  --bg-card-hover: rgba(241, 245, 249, 0.98);
   --border-color: rgba(0, 0, 0, 0.08);
-  --border-glow: rgba(99, 102, 241, 0.2);
+  --border-glow: rgba(99, 102, 241, 0.25);
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
-  --shadow-card: 0 8px 24px 0 rgba(149, 157, 165, 0.15);
-  --shadow-hover: 0 12px 28px 0 rgba(99, 102, 241, 0.2);
+  --shadow-card: 0 10px 28px 0 rgba(149, 157, 165, 0.18);
+  --shadow-hover: 0 16px 32px 0 rgba(99, 102, 241, 0.25);
 }
 
 /* Base Reset */
@@ -130,26 +130,30 @@ button, input, select, textarea {
 }
 
 .badge {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 20px;
   letter-spacing: 0.02em;
 }
 
-.badge-a { background: var(--color-a-bg); color: var(--color-a); border: 1px solid rgba(255, 71, 87, 0.35); }
-.badge-b { background: var(--color-b-bg); color: var(--color-b); border: 1px solid rgba(255, 165, 2, 0.35); }
-.badge-c { background: var(--color-c-bg); color: var(--color-c); border: 1px solid rgba(46, 213, 115, 0.35); }
+.badge-a { background: var(--color-a-bg); color: var(--color-a); border: 1px solid rgba(245, 158, 11, 0.45); }
+.badge-b { background: var(--color-b-bg); color: var(--color-b); border: 1px solid rgba(168, 85, 247, 0.45); }
+.badge-c { background: var(--color-c-bg); color: var(--color-c); border: 1px solid rgba(16, 185, 129, 0.45); }
 
 .tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   font-size: 0.75rem;
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.06);
-  padding: 3px 9px;
-  border-radius: 6px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.07);
+  padding: 4px 10px;
+  border-radius: 20px;
   border: 1px solid var(--border-color);
+  font-weight: 600;
 }
 
 .hidden { display: none !important; }

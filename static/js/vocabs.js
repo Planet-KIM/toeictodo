@@ -1,6 +1,6 @@
 /* ==========================================================================
    Vocabs Module - Vocabulary Grid, Dynamic Multi-POS Filters & Active Recall Masking
-   Phase 1-4 + Multi-POS / Multi-Meaning + Active Recall Blind Masking
+   Phase 1-4 + Multi-POS / Multi-Meaning + Gamified Icon Badges & Highlighting
    ========================================================================== */
 
 function renderPosBadges(posStr) {
@@ -8,6 +8,13 @@ function renderPosBadges(posStr) {
   const parts = posStr.split(/[,/]/).map(p => p.trim()).filter(Boolean);
   if (!parts.length) return `<span class="tag tag-pos-기타어휘">기타어휘</span>`;
   return parts.map(p => `<span class="tag tag-pos-${p}">${p}</span>`).join(' ');
+}
+
+function getPrioBadgeHtml(prio) {
+  const p = prio ? prio.toUpperCase() : 'A';
+  if (p === 'A') return `<span class="badge badge-a">👑 A등급</span>`;
+  if (p === 'B') return `<span class="badge badge-b">💎 B등급</span>`;
+  return `<span class="badge badge-c">🌟 C등급</span>`;
 }
 
 function getFilteredWords() {
@@ -344,13 +351,12 @@ function renderVocabs() {
     container.innerHTML = displayWords.map((w, idx) => {
       const globalIdx = pageOffset + idx;
       const isMem = state.memorizedIds.has(w.id);
-      const prioClass = `badge-${w.priority.toLowerCase()}`;
       return `
         <div class="compact-row ${isMem ? 'memorized' : ''}" data-word-id="${w.id}" data-item-idx="${globalIdx}">
           <div class="compact-left">
             <span class="compact-no">${globalIdx + 1}</span>
             <span class="compact-word">${getWordHtml(w.word)}</span>
-            <span class="badge ${prioClass}">${w.priority}</span>
+            ${getPrioBadgeHtml(w.priority)}
             ${renderPosBadges(w.pos)}
             <span class="compact-meaning">${getMeaningHtml(w.meaning)}</span>
           </div>
@@ -369,13 +375,12 @@ function renderVocabs() {
     container.innerHTML = displayWords.map((w, idx) => {
       const globalIdx = pageOffset + idx;
       const isMem = state.memorizedIds.has(w.id);
-      const prioClass = `badge-${w.priority.toLowerCase()}`;
       return `
         <div class="vocab-card ${isMem ? 'memorized' : ''}" data-word-id="${w.id}" data-item-idx="${globalIdx}">
           <div class="card-top">
             <span class="card-word">${getWordHtml(w.word)}</span>
             <div class="card-tags">
-              <span class="badge ${prioClass}">${w.priority}등급</span>
+              ${getPrioBadgeHtml(w.priority)}
               ${renderPosBadges(w.pos)}
             </div>
           </div>
