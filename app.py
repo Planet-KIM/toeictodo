@@ -54,6 +54,14 @@ if __name__ == '__main__':
     app = create_app()
     logger.info("=" * 50)
     logger.info("🚀 TOEIC 750 Flask App Started with Application Logging System")
-    logger.info(f"🌐 Access URL: http://localhost:{Config.PORT}")
+    
+    ssl_ctx = (Config.SSL_CERT, Config.SSL_KEY) if Config.USE_SSL else None
+    scheme = "https" if Config.USE_SSL else "http"
+    
+    logger.info(f"🌐 Access URL: {scheme}://localhost:{Config.PORT}")
+    if Config.USE_SSL:
+        logger.info("🔒 SSL/HTTPS Enabled with cert.pem and key.pem")
     logger.info("=" * 50)
-    app.run(host=Config.HOST, port=Config.PORT, debug=Config.DEBUG)
+    
+    app.run(host=Config.HOST, port=Config.PORT, debug=Config.DEBUG, ssl_context=ssl_ctx)
+

@@ -26,3 +26,7 @@ audio_cache/
 # Application Log Files
 logs/
 *.log
+
+# SSL Certificates
+*.pem
+
