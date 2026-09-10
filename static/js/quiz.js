@@ -215,182 +215,179 @@ function renderQuizQuestion() {
 
   const optionsContainer = document.getElementById('q-options-container');
 
-  // Render Voice STT Mode (Server-Side Audio STT Pipeline via MediaRecorder)
+  // Render Voice STT Mode (Unified Input Box + 5s Auto-Countdown + Auto-Advance)
   if (q.type === 'voice') {
     optionsContainer.innerHTML = `
-      <div class="voice-mic-container" style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:14px; align-items:center;">
-        <div id="voice-speech-status" class="voice-speech-box">
-          🗣️ 마이크 버튼을 누르고 한국어 뜻을 편하게 말씀하세요
+      <div class="voice-quiz-unified-card" style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:16px; align-items:center; width:100%; max-width:560px; margin:0 auto;">
+        
+        <!-- 5-Second Countdown Timer Badge -->
+        <div id="voice-timer-badge" class="voice-timer-badge" style="font-size:1.1rem; font-weight:800; color:#fbbf24; background:rgba(251,191,36,0.15); border:1.5px solid rgba(251,191,36,0.4); padding:8px 22px; border-radius:30px; display:flex; align-items:center; gap:8px;">
+          ⏱️ <span id="timer-sec-count">5</span>초 남음 (음성 수신 중)
         </div>
-        <button id="voice-start-btn" class="voice-mic-btn">
-          🎤 음성 정답 말하기 (터치)
-        </button>
-        <div class="manual-voice-fallback" style="display:flex; gap:8px; margin-top:6px; width:100%; max-width:420px;">
-          <input type="text" id="manual-voice-input" class="search-box" style="flex:1; padding:10px 14px; font-size:0.9rem; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="⌨️ 마이크 안 될 때 텍스트 정답 입력">
-          <button id="btn-manual-voice-submit" class="primary-btn sm" style="white-space:nowrap; padding:10px 16px;">제출</button>
+
+        <!-- Unified Single Input Box (Combines Voice STT Text + Keyboard Input + Submit) -->
+        <div class="unified-input-group" style="display:flex; gap:10px; width:100%; align-items:center;">
+          <div style="position:relative; flex:1;">
+            <input type="text" id="unified-voice-text-input" class="search-box" style="width:100%; padding:14px 18px; font-size:1.1rem; font-weight:700; background:rgba(0,0,0,0.4); border:2px solid var(--accent-primary); color:var(--text-primary); border-radius:var(--radius-md); box-shadow:0 0 20px rgba(99, 102, 241, 0.3);" placeholder="🎙️ 말씀하세요... (또는 직접 입력)">
+            <span id="mic-vol-bar" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:0.85rem; color:#34d399; font-weight:800;">🎙️ [▰▰▰▰▱▱]</span>
+          </div>
+          <button id="btn-unified-submit" class="primary-btn lg" style="padding:14px 24px; white-space:nowrap; border-radius:var(--radius-md); font-weight:800;">제출</button>
         </div>
+
+        <div style="font-size:0.85rem; color:var(--text-secondary); text-align:center;">
+          🔊 영어 단어를 보고 마이크로 한국어 뜻을 말씀해 주세요. (인식된 단어가 입력창에 채워집니다)
+        </div>
+
       </div>
     `;
 
-    const micBtn = document.getElementById('voice-start-btn');
-    const statusBox = document.getElementById('voice-speech-status');
-    const manualInput = document.getElementById('manual-voice-input');
-    const manualBtn = document.getElementById('btn-manual-voice-submit');
+    const unifiedInput = document.getElementById('unified-voice-text-input');
+    const unifiedSubmitBtn = document.getElementById('btn-unified-submit');
+    const timerBadgeCount = document.getElementById('timer-sec-count');
+    const volBar = document.getElementById('mic-vol-bar');
 
     let mediaRecorder = null;
     let audioChunks = [];
     let audioStream = null;
-    let recordTimer = null;
-    let isRecording = false;
+    let countdownInterval = null;
+    let isEvaluated = false;
+    let secondsLeft = 5;
 
     const stopRecordingTracks = () => {
       if (audioStream) {
         audioStream.getTracks().forEach(t => t.stop());
         audioStream = null;
       }
-      if (recordTimer) {
-        clearTimeout(recordTimer);
-        recordTimer = null;
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
       }
     };
 
     const submitVoiceVerdict = (transcriptText) => {
-      micBtn.classList.remove('listening');
-      micBtn.disabled = false;
-      micBtn.textContent = '🎤 음성 다시 말하기';
-      statusBox.innerHTML = `🗣️ 인식 완료: <span class="speech-highlight">"${transcriptText}"</span>`;
-      statusBox.classList.remove('active-speech');
+      if (isEvaluated) return;
+      isEvaluated = true;
+      stopRecordingTracks();
+
+      if (unifiedInput) unifiedInput.value = transcriptText;
 
       const verdict = checkKoreanSemanticMatch(transcriptText, q.item.meaning);
       handleVoiceQuizVerdict(verdict, transcriptText);
     };
 
-    // Manual Text Fallback Handler
+    // Manual Submit Button / Enter Key Handler
     const handleManualSubmit = () => {
-      const val = manualInput ? manualInput.value.trim() : '';
+      if (isEvaluated) return;
+      const val = unifiedInput ? unifiedInput.value.trim() : '';
       if (!val) {
-        alert('정답을 입력해 주세요.');
+        alert('한국어 뜻 정답을 입력해 주세요.');
         return;
       }
       submitVoiceVerdict(val);
     };
 
-    if (manualBtn) manualBtn.addEventListener('click', handleManualSubmit);
-    if (manualInput) {
-      manualInput.addEventListener('keypress', (e) => {
+    if (unifiedSubmitBtn) unifiedSubmitBtn.addEventListener('click', handleManualSubmit);
+    if (unifiedInput) {
+      unifiedInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleManualSubmit();
       });
     }
 
-    if (micBtn) {
-      micBtn.addEventListener('click', async () => {
-        if (isRecording) {
-          // Tap again to stop recording early
+    // Automatically Start Voice Recording & 5-Second Countdown Timer
+    const startVoiceRecordingPipeline = async () => {
+      try {
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        console.warn('Microphone permission missing:', err);
+        if (unifiedInput) unifiedInput.placeholder = '⌨️ 마이크 미승인 - 직접 정답 입력';
+        return;
+      }
+
+      audioChunks = [];
+      let mimeType = 'audio/webm';
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mimeType = 'audio/webm;codecs=opus';
+      else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) mimeType = 'audio/ogg;codecs=opus';
+      else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+
+      mediaRecorder = new MediaRecorder(audioStream, { mimeType });
+
+      // Real-time Audio Equalizer Vol Meter
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioCtx.createAnalyser();
+        const source = audioCtx.createMediaStreamSource(audioStream);
+        source.connect(analyser);
+        analyser.fftSize = 32;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        const updateVol = () => {
+          if (isEvaluated || !audioStream) return;
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+          const avg = sum / dataArray.length;
+          const pct = Math.min(100, Math.round((avg / 128) * 100));
+          const barCount = Math.max(1, Math.ceil(pct / 16));
+          const bars = '▰'.repeat(barCount) + '▱'.repeat(6 - barCount);
+          if (volBar) volBar.textContent = `🎙️ [${bars}]`;
+          requestAnimationFrame(updateVol);
+        };
+        updateVol();
+      } catch (e) {}
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stopRecordingTracks();
+        if (isEvaluated) return;
+
+        if (unifiedInput) unifiedInput.placeholder = '⏳ 구글 STT 변환 중...';
+
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'speech.webm');
+
+        try {
+          const res = await fetch('/api/stt', { method: 'POST', body: formData });
+          const data = await res.json();
+
+          if (data.success && data.text) {
+            submitVoiceVerdict(data.text);
+          } else {
+            if (!isEvaluated) {
+              submitVoiceVerdict(''); // Empty speech -> counted as wrong & auto advance
+            }
+          }
+        } catch (err) {
+          if (!isEvaluated) submitVoiceVerdict('');
+        }
+      };
+
+      mediaRecorder.start();
+
+      // Start 5-Second Visual Countdown
+      secondsLeft = 5;
+      if (timerBadgeCount) timerBadgeCount.textContent = secondsLeft;
+
+      countdownInterval = setInterval(() => {
+        secondsLeft--;
+        if (timerBadgeCount) timerBadgeCount.textContent = Math.max(0, secondsLeft);
+
+        if (secondsLeft <= 0) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
           if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
           }
-          return;
         }
+      }, 1000);
+    };
 
-        try {
-          audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        } catch (err) {
-          alert('🎤 마이크 권한을 허용해 주세요!');
-          return;
-        }
+    // Auto-start recording pipeline immediately on question load!
+    setTimeout(startVoiceRecordingPipeline, 300);
 
-        audioChunks = [];
-        isRecording = true;
-
-        let mimeType = 'audio/webm';
-        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mimeType = 'audio/webm;codecs=opus';
-        else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) mimeType = 'audio/ogg;codecs=opus';
-        else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
-
-        mediaRecorder = new MediaRecorder(audioStream, { mimeType });
-
-        micBtn.classList.add('listening');
-        micBtn.textContent = '⏹️ 말씀 완료 후 다시 클릭 (또는 3.5초 후 자동 완료)';
-        statusBox.innerHTML = `🎙️ 목소리를 듣고 있습니다... 한국어 뜻을 말씀해 주세요!`;
-        statusBox.classList.add('active-speech');
-
-        // Web Audio Volume Equalizer Meter
-        try {
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          const analyser = audioCtx.createAnalyser();
-          const source = audioCtx.createMediaStreamSource(audioStream);
-          source.connect(analyser);
-          analyser.fftSize = 32;
-          const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-          const updateVol = () => {
-            if (!isRecording) return;
-            analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-            const avg = sum / dataArray.length;
-            const pct = Math.min(100, Math.round((avg / 128) * 100));
-
-            const barCount = Math.max(1, Math.ceil(pct / 16));
-            const bars = '▰'.repeat(barCount) + '▱'.repeat(6 - barCount);
-
-            micBtn.innerHTML = `⏹️ [${bars}] 말씀 완료 후 클릭!`;
-            requestAnimationFrame(updateVol);
-          };
-          updateVol();
-        } catch (err) {
-          console.warn('Volume meter error:', err);
-        }
-
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) audioChunks.push(event.data);
-        };
-
-        mediaRecorder.onstop = async () => {
-          isRecording = false;
-          stopRecordingTracks();
-
-          micBtn.disabled = true;
-          micBtn.textContent = '⏳ 구글 STT 변환 중...';
-          statusBox.innerHTML = `⏳ 음성 오디오를 구글 STT 서버로 전송하여 변환 중입니다...`;
-
-          const audioBlob = new Blob(audioChunks, { type: mimeType });
-          const formData = new FormData();
-          formData.append('audio', audioBlob, 'speech.webm');
-
-          try {
-            const res = await fetch('/api/stt', {
-              method: 'POST',
-              body: formData
-            });
-            const data = await res.json();
-
-            if (data.success && data.text) {
-              submitVoiceVerdict(data.text);
-            } else {
-              statusBox.innerHTML = `⚠️ ${data.error || '음성을 명확하게 인식하지 못했습니다'}. 다시 말씀해 주세요.`;
-              micBtn.disabled = false;
-              micBtn.classList.remove('listening');
-              micBtn.textContent = '🎤 음성 다시 말하기';
-            }
-          } catch (err) {
-            statusBox.innerHTML = `⚠️ 서버 연동 오류가 발생했습니다. 다시 시도해 주세요.`;
-            micBtn.disabled = false;
-            micBtn.classList.remove('listening');
-            micBtn.textContent = '🎤 음성 다시 말하기';
-          }
-        };
-
-        mediaRecorder.start();
-
-        // Auto stop after 3.5 seconds
-        recordTimer = setTimeout(() => {
-          if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-          }
-        }, 3500);
-      });
-    }
   } else {
     // Render Standard Choice Options
     optionsContainer.innerHTML = q.choices.map((choice, idx) => `
@@ -424,11 +421,13 @@ function handleVoiceQuizVerdict(verdict, spokenText) {
   const expBox = document.getElementById('q-explanation-box');
   const resultBadge = document.getElementById('q-result-badge');
 
+  const displaySpoken = spokenText ? `"${spokenText}"` : '무음/미입력';
+
   if (isCorrect) {
-    resultBadge.innerHTML = `🎉 정답입니다! <span style="font-size:0.9rem; font-weight:600; color:var(--text-secondary);">(인식: "${spokenText}" ➔ 인정된 뜻: "${verdict.matchedMeaning}")</span>`;
+    resultBadge.innerHTML = `🎉 정답입니다! <span style="font-size:0.9rem; font-weight:600; color:var(--text-secondary);">(입력: ${displaySpoken} ➔ 인정된 뜻: "${verdict.matchedMeaning}")</span>`;
     resultBadge.style.color = 'var(--success)';
   } else {
-    resultBadge.innerHTML = `❌ 아쉽네요! <span style="font-size:0.9rem; font-weight:600; color:var(--text-secondary);">(인식: "${spokenText}" / DB 정답: "${q.item.meaning}")</span>`;
+    resultBadge.innerHTML = `❌ 오답입니다! <span style="font-size:0.9rem; font-weight:600; color:var(--text-secondary);">(입력: ${displaySpoken} / 정답: "${q.item.meaning}")</span>`;
     resultBadge.style.color = 'var(--error)';
   }
 
@@ -440,15 +439,15 @@ function handleVoiceQuizVerdict(verdict, spokenText) {
 
   expBox.classList.remove('hidden');
 
-  const nextBtn = document.getElementById('q-next-btn');
-  nextBtn.onclick = () => {
+  // Auto-advance to the next question after 1.2 seconds delay!
+  setTimeout(() => {
     state.quizCurrentIdx++;
     if (state.quizCurrentIdx < state.quizQuestions.length) {
       renderQuizQuestion();
     } else {
       finishQuiz();
     }
-  };
+  }, 1200);
 }
 
 function selectQuizAnswer(choiceIdx, selectedAnswer) {

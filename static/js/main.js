@@ -23,7 +23,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderPairs();
   renderTraps();
   initMindmap();
+
+  // Pre-request microphone permission on page load for zero-delay voice quiz
+  preRequestMicrophonePermission();
 });
+
+function preRequestMicrophonePermission() {
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      stream.getTracks().forEach(track => track.stop());
+      console.log('[Mic] Microphone permission pre-approved on site load.');
+    }).catch(err => {
+      console.warn('[Mic] Pre-request mic notice:', err);
+    });
+  }
+}
+
 
 // PWA ServiceWorker Registration (iOS Safari & Android Chrome)
 function registerServiceWorker() {
