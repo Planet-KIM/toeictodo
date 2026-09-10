@@ -288,12 +288,15 @@ function renderQuizQuestion() {
 
         // Trigger silence timer ONLY after recognition engine is actively listening!
         recognition.onstart = () => {
-          statusBox.innerHTML = `🎙️ 목소리를 듣고 있습니다... <span style="font-size:0.85rem; opacity:0.8;">(편하게 말씀하세요)</span>`;
+          statusBox.innerHTML = `🎙️ 목소리를 듣고 있습니다... 한국어 뜻을 말씀해 주세요!`;
           startSilenceTimer(8);
         };
 
         recognition.onspeechstart = () => {
-          statusBox.innerHTML = `🗣️ 음성 감지됨! 듣는 중...`;
+          // Reset silence timer on speech start without wiping out interim speech text
+          if (!latestTranscript) {
+            statusBox.innerHTML = `🎙️ 목소리 감지됨... 말씀하시는 내용을 듣고 있습니다!`;
+          }
           startSilenceTimer(5);
         };
 
@@ -314,8 +317,8 @@ function renderQuizQuestion() {
 
           if (currentSpokenText) {
             latestTranscript = currentSpokenText;
-            // Real-time spoken text display ABOVE the button!
-            statusBox.innerHTML = `💬 인식 중: <span class="speech-highlight">"${currentSpokenText}"</span>`;
+            // Display spoken text LIVE in the text box above the button!
+            statusBox.innerHTML = `💬 인식된 음성: <span class="speech-highlight">"${currentSpokenText}"</span>`;
             statusBox.classList.add('active-speech');
 
             // Reset 5s silence timer while user is actively speaking
