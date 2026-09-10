@@ -225,40 +225,87 @@ function renderQuizQuestion() {
         <button id="voice-start-btn" class="voice-mic-btn">
           🎤 음성 정답 말하기 (터치)
         </button>
+        <div class="manual-voice-fallback" style="display:flex; gap:8px; margin-top:6px; width:100%; max-width:420px;">
+          <input type="text" id="manual-voice-input" class="search-box" style="flex:1; padding:10px 14px; font-size:0.9rem; background:rgba(0,0,0,0.3); border:1px solid var(--border-color); color:var(--text-primary); border-radius:var(--radius-sm);" placeholder="⌨️ 마이크 안 될 때 텍스트 정답 입력">
+          <button id="btn-manual-voice-submit" class="primary-btn sm" style="white-space:nowrap; padding:10px 16px;">제출</button>
+        </div>
       </div>
     `;
 
     const micBtn = document.getElementById('voice-start-btn');
     const statusBox = document.getElementById('voice-speech-status');
+    const manualInput = document.getElementById('manual-voice-input');
+    const manualBtn = document.getElementById('btn-manual-voice-submit');
 
     let silenceTimer = null;
+    let autoSubmitTimer = null;
     let recognition = null;
     let isEvaluated = false;
     let latestTranscript = '';
+    let audioStream = null;
 
     const clearSilenceTimer = () => {
-      if (silenceTimer) {
-        clearTimeout(silenceTimer);
-        silenceTimer = null;
+      if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+      if (autoSubmitTimer) { clearTimeout(autoSubmitTimer); autoSubmitTimer = null; }
+    };
+
+    const stopAudioTracks = () => {
+      if (audioStream) {
+        audioStream.getTracks().forEach(t => t.stop());
+        audioStream = null;
       }
     };
+
+    const submitVoiceVerdict = (transcriptText) => {
+      if (isEvaluated) return;
+      isEvaluated = true;
+      clearSilenceTimer();
+      stopAudioTracks();
+
+      if (recognition) {
+        try { recognition.stop(); } catch(e) {}
+      }
+
+      micBtn.classList.remove('listening');
+      micBtn.disabled = false;
+      micBtn.textContent = '🎤 음성 다시 말하기';
+      statusBox.innerHTML = `🗣️ 인식 완료: <span class="speech-highlight">"${transcriptText}"</span>`;
+      statusBox.classList.remove('active-speech');
+
+      const verdict = checkKoreanSemanticMatch(transcriptText, q.item.meaning);
+      handleVoiceQuizVerdict(verdict, transcriptText);
+    };
+
+    // Manual Text Fallback Handler
+    const handleManualSubmit = () => {
+      const val = manualInput ? manualInput.value.trim() : '';
+      if (!val) {
+        alert('정답을 입력해 주세요.');
+        return;
+      }
+      submitVoiceVerdict(val);
+    };
+
+    if (manualBtn) manualBtn.addEventListener('click', handleManualSubmit);
+    if (manualInput) {
+      manualInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleManualSubmit();
+      });
+    }
 
     const startSilenceTimer = (durationSeconds = 8) => {
       clearSilenceTimer();
       silenceTimer = setTimeout(() => {
-        if (!isEvaluated && recognition) {
-          try { recognition.stop(); } catch(e) {}
-          micBtn.classList.remove('listening');
-          micBtn.disabled = false;
-          micBtn.textContent = '🎤 음성 다시 말하기';
-          
+        if (!isEvaluated) {
           if (latestTranscript.trim()) {
-            isEvaluated = true;
-            statusBox.innerHTML = `🗣️ 인식 완료: <span class="speech-highlight">"${latestTranscript.trim()}"</span>`;
-            const verdict = checkKoreanSemanticMatch(latestTranscript.trim(), q.item.meaning);
-            handleVoiceQuizVerdict(verdict, latestTranscript.trim());
+            submitVoiceVerdict(latestTranscript.trim());
           } else {
-            statusBox.innerHTML = `⏱️ <strong style="color:var(--warning);">음성이 인식되지 않았습니다.</strong> 다시 말하기 버튼을 누르고 말씀해 주세요.`;
+            if (recognition) { try { recognition.stop(); } catch(e) {} }
+            stopAudioTracks();
+            micBtn.classList.remove('listening');
+            micBtn.disabled = false;
+            micBtn.textContent = '🎤 음성 다시 말하기';
+            statusBox.innerHTML = `⏱️ <strong style="color:var(--warning);">음성이 인식되지 않았습니다.</strong> 버튼을 누르고 다시 말씀하시거나 직접 입력해 주세요.`;
             statusBox.classList.remove('active-speech');
           }
         }
@@ -277,113 +324,128 @@ function renderQuizQuestion() {
         latestTranscript = '';
         recognition = new SpeechRecognition();
         recognition.lang = 'ko-KR';
-        recognition.interimResults = true; // Stream real-time spoken text!
+        recognition.continuous = true; // Stream continuously across phrases!
+        recognition.interimResults = true; // Syllable-by-syllable stream!
         recognition.maxAlternatives = 1;
 
         micBtn.classList.add('listening');
         micBtn.disabled = true;
         micBtn.textContent = '🎙️ 음성 듣는 중... (말씀하세요)';
-        statusBox.innerHTML = `🎙️ 마이크 연결 중...`;
+        statusBox.innerHTML = `🎙️ 마이크 연결 및 음성 엔진 준비 중...`;
         statusBox.classList.add('active-speech');
 
-        // Trigger silence timer ONLY after recognition engine is actively listening!
+        // Real-time Web Audio Volume Meter Equalizer
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          try {
+            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioCtx.createAnalyser();
+            const source = audioCtx.createMediaStreamSource(audioStream);
+            source.connect(analyser);
+            analyser.fftSize = 32;
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+            const updateVol = () => {
+              if (isEvaluated || !micBtn.classList.contains('listening')) return;
+              analyser.getByteFrequencyData(dataArray);
+              let sum = 0;
+              for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+              const avg = sum / dataArray.length;
+              const pct = Math.min(100, Math.round((avg / 128) * 100));
+
+              const barCount = Math.max(1, Math.ceil(pct / 16));
+              const bars = '▰'.repeat(barCount) + '▱'.repeat(6 - barCount);
+
+              if (!latestTranscript) {
+                micBtn.innerHTML = `🎙️ [${bars}] 음성 듣는 중... (말씀하세요)`;
+              } else {
+                micBtn.innerHTML = `🎙️ [${bars}] 실시간 수신 중...`;
+              }
+              requestAnimationFrame(updateVol);
+            };
+            updateVol();
+          } catch (err) {
+            console.warn('Web Audio Volume Meter Error:', err);
+          }
+        }
+
         recognition.onstart = () => {
-          statusBox.innerHTML = `🎙️ 목소리를 듣고 있습니다... 한국어 뜻을 말씀해 주세요!`;
+          if (!latestTranscript) {
+            statusBox.innerHTML = `🎙️ 목소리를 듣고 있습니다... 한국어 뜻을 말씀해 주세요!`;
+          }
           startSilenceTimer(8);
         };
 
         recognition.onspeechstart = () => {
-          // Reset silence timer on speech start without wiping out interim speech text
-          if (!latestTranscript) {
-            statusBox.innerHTML = `🎙️ 목소리 감지됨... 말씀하시는 내용을 듣고 있습니다!`;
-          }
           startSilenceTimer(5);
         };
 
         recognition.onresult = (event) => {
-          let interimTranscript = '';
-          let finalTranscript = '';
+          let fullTranscript = '';
 
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            const transcriptChunk = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalTranscript += transcriptChunk;
-            } else {
-              interimTranscript += transcriptChunk;
-            }
+          for (let i = 0; i < event.results.length; ++i) {
+            fullTranscript += event.results[i][0].transcript;
           }
 
-          const currentSpokenText = (finalTranscript || interimTranscript).trim();
+          const currentText = fullTranscript.trim();
 
-          if (currentSpokenText) {
-            latestTranscript = currentSpokenText;
-            // Display spoken text LIVE in the text box above the button!
-            statusBox.innerHTML = `💬 인식된 음성: <span class="speech-highlight">"${currentSpokenText}"</span>`;
+          if (currentText) {
+            latestTranscript = currentText;
+            // STREAM LIVE SYLLABLES DIRECTLY INTO THE TEXT BOX!
+            statusBox.innerHTML = `💬 인식된 음성: <span class="speech-highlight">"${currentText}"</span>`;
             statusBox.classList.add('active-speech');
 
-            // Reset 5s silence timer while user is actively speaking
-            startSilenceTimer(5);
-          }
-
-          if (finalTranscript.trim() && !isEvaluated) {
-            isEvaluated = true;
-            clearSilenceTimer();
-
-            micBtn.classList.remove('listening');
-            micBtn.disabled = false;
-            micBtn.textContent = '🎤 음성 다시 말하기';
-            statusBox.innerHTML = `🗣️ 인식 완료: <span class="speech-highlight">"${finalTranscript.trim()}"</span>`;
-            statusBox.classList.remove('active-speech');
-
-            // Evaluate using Korean Fuzzy Matcher
-            const verdict = checkKoreanSemanticMatch(finalTranscript.trim(), q.item.meaning);
-            handleVoiceQuizVerdict(verdict, finalTranscript.trim());
+            // Reset silence timer on every spoken syllable chunk!
+            if (autoSubmitTimer) clearTimeout(autoSubmitTimer);
+            autoSubmitTimer = setTimeout(() => {
+              if (!isEvaluated && latestTranscript.trim()) {
+                submitVoiceVerdict(latestTranscript.trim());
+              }
+            }, 1400); // Auto-submit 1.4 seconds after user finishes speaking
           }
         };
 
         recognition.onerror = (e) => {
-          clearSilenceTimer();
-          micBtn.classList.remove('listening');
-          micBtn.disabled = false;
-          micBtn.textContent = '🎤 음성 다시 말하기';
-          statusBox.classList.remove('active-speech');
-
           if (e.error === 'no-speech') {
             if (latestTranscript.trim() && !isEvaluated) {
-              isEvaluated = true;
-              statusBox.innerHTML = `🗣️ 인식 완료: <span class="speech-highlight">"${latestTranscript.trim()}"</span>`;
-              const verdict = checkKoreanSemanticMatch(latestTranscript.trim(), q.item.meaning);
-              handleVoiceQuizVerdict(verdict, latestTranscript.trim());
+              submitVoiceVerdict(latestTranscript.trim());
               return;
             }
+            clearSilenceTimer();
+            stopAudioTracks();
+            micBtn.classList.remove('listening');
+            micBtn.disabled = false;
+            micBtn.textContent = '🎤 음성 다시 말하기';
             statusBox.innerHTML = '⏱️ <strong style="color:var(--warning);">음성이 인식되지 않았습니다.</strong> 다시 말하기 버튼을 누르고 말씀해 주세요.';
+            statusBox.classList.remove('active-speech');
           } else if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+            clearSilenceTimer();
+            stopAudioTracks();
+            micBtn.classList.remove('listening');
+            micBtn.disabled = false;
+            micBtn.textContent = '🎤 음성 다시 말하기';
             statusBox.innerHTML = '⚠️ 마이크 권한 거부됨: 주소창 자물쇠/설정에서 마이크를 "허용"으로 전환해 주세요.';
-          } else {
-            statusBox.innerHTML = `⚠️ 음성 인식 알림: 다시 시도해 주세요. (${e.error})`;
+            statusBox.classList.remove('active-speech');
           }
         };
 
         recognition.onend = () => {
-          clearSilenceTimer();
-          micBtn.classList.remove('listening');
-          micBtn.disabled = false;
-          micBtn.textContent = '🎤 음성 다시 말하기';
-          statusBox.classList.remove('active-speech');
-
-          // If recognition ended and we gathered a transcript that wasn't evaluated yet
           if (!isEvaluated && latestTranscript.trim()) {
-            isEvaluated = true;
-            statusBox.innerHTML = `🗣️ 인식 완료: <span class="speech-highlight">"${latestTranscript.trim()}"</span>`;
-            const verdict = checkKoreanSemanticMatch(latestTranscript.trim(), q.item.meaning);
-            handleVoiceQuizVerdict(verdict, latestTranscript.trim());
+            submitVoiceVerdict(latestTranscript.trim());
+          } else if (!isEvaluated) {
+            stopAudioTracks();
+            micBtn.classList.remove('listening');
+            micBtn.disabled = false;
+            micBtn.textContent = '🎤 음성 다시 말하기';
+            statusBox.classList.remove('active-speech');
           }
         };
 
         try {
           recognition.start();
-        } catch(err) {
+        } catch (err) {
           clearSilenceTimer();
+          stopAudioTracks();
           micBtn.classList.remove('listening');
           micBtn.disabled = false;
           micBtn.textContent = '🎤 음성 다시 말하기';
