@@ -297,7 +297,56 @@ def get_audio_preload_list():
         for acc in accents:
             urls.append(f"/api/audio?text={urllib.parse.quote(w['word'])}&accent={acc}")
 
-        ko_text = f"{w['meaning']}. {w['pos']}."
-        urls.append(f"/api/audio?text={urllib.parse.quote(ko_text)}&accent=ko")
+# --------------------------------------------------------------------------
+# Server-Side STT Endpoint (Google Speech API via MediaRecorder Audio Upload)
+# --------------------------------------------------------------------------
+import os
+import tempfile
+import speech_recognition as sr
+from pydub import AudioSegment
 
-    return jsonify({'total': len(urls), 'urls': urls})
+@api_bp.route('/stt', methods=['POST'])
+def process_stt_audio():
+    """
+    Server-side STT API Endpoint.
+    Receives WebM/WAV audio blob from MediaRecorder, converts to WAV using ffmpeg,
+    and recognizes Korean speech using Google Speech API.
+    """
+    if 'audio' not in request.files:
+        return jsonify({'success': False, 'error': 'No audio file provided'}), 400
+
+    audio_file = request.files['audio']
+
+    with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as tmp_webm:
+        audio_file.save(tmp_webm.name)
+        webm_path = tmp_webm.name
+
+    wav_path = webm_path + '.wav'
+
+    try:
+        sound = AudioSegment.from_file(webm_path)
+        sound.export(wav_path, format='wav')
+
+        r = sr.Recognizer()
+        with sr.AudioFile(wav_path) as source:
+            audio_data = r.record(source)
+            text = r.recognize_google(audio_data, language='ko-KR')
+
+        logger.info(f"[Server-Side STT] Recognized text: '{text}'")
+        return jsonify({'success': True, 'text': text})
+    except sr.UnknownValueError:
+        return jsonify({
+            'success': False,
+            'error': '음성을 명확하게 인식하지 못했습니다. 다시 말씀해 주세요.'
+        })
+    except Exception as e:
+        logger.error(f"[Server-Side STT Error] {e}")
+        return jsonify({'success': False, 'error': f"STT Processing Error: {str(e)}"}), 500
+    finally:
+        if os.path.exists(webm_path):
+            try: os.remove(webm_path)
+            except: pass
+        if os.path.exists(wav_path):
+            try: os.remove(wav_path)
+            except: pass
+

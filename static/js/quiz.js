@@ -215,7 +215,7 @@ function renderQuizQuestion() {
 
   const optionsContainer = document.getElementById('q-options-container');
 
-  // Render Voice STT Mode
+  // Render Voice STT Mode (Server-Side Audio STT Pipeline via MediaRecorder)
   if (q.type === 'voice') {
     optionsContainer.innerHTML = `
       <div class="voice-mic-container" style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:14px; align-items:center;">
@@ -237,35 +237,24 @@ function renderQuizQuestion() {
     const manualInput = document.getElementById('manual-voice-input');
     const manualBtn = document.getElementById('btn-manual-voice-submit');
 
-    let silenceTimer = null;
-    let autoSubmitTimer = null;
-    let recognition = null;
-    let isEvaluated = false;
-    let latestTranscript = '';
+    let mediaRecorder = null;
+    let audioChunks = [];
     let audioStream = null;
+    let recordTimer = null;
+    let isRecording = false;
 
-    const clearSilenceTimer = () => {
-      if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
-      if (autoSubmitTimer) { clearTimeout(autoSubmitTimer); autoSubmitTimer = null; }
-    };
-
-    const stopAudioTracks = () => {
+    const stopRecordingTracks = () => {
       if (audioStream) {
         audioStream.getTracks().forEach(t => t.stop());
         audioStream = null;
       }
+      if (recordTimer) {
+        clearTimeout(recordTimer);
+        recordTimer = null;
+      }
     };
 
     const submitVoiceVerdict = (transcriptText) => {
-      if (isEvaluated) return;
-      isEvaluated = true;
-      clearSilenceTimer();
-      stopAudioTracks();
-
-      if (recognition) {
-        try { recognition.stop(); } catch(e) {}
-      }
-
       micBtn.classList.remove('listening');
       micBtn.disabled = false;
       micBtn.textContent = '🎤 음성 다시 말하기';
@@ -293,163 +282,113 @@ function renderQuizQuestion() {
       });
     }
 
-    const startSilenceTimer = (durationSeconds = 8) => {
-      clearSilenceTimer();
-      silenceTimer = setTimeout(() => {
-        if (!isEvaluated) {
-          if (latestTranscript.trim()) {
-            submitVoiceVerdict(latestTranscript.trim());
-          } else {
-            if (recognition) { try { recognition.stop(); } catch(e) {} }
-            stopAudioTracks();
-            micBtn.classList.remove('listening');
-            micBtn.disabled = false;
-            micBtn.textContent = '🎤 음성 다시 말하기';
-            statusBox.innerHTML = `⏱️ <strong style="color:var(--warning);">음성이 인식되지 않았습니다.</strong> 버튼을 누르고 다시 말씀하시거나 직접 입력해 주세요.`;
-            statusBox.classList.remove('active-speech');
-          }
-        }
-      }, durationSeconds * 1000);
-    };
-
     if (micBtn) {
       micBtn.addEventListener('click', async () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-          alert('현재 브라우저가 음성 인식을 지원하지 않습니다. Chrome 또는 Safari 최신 버전을 사용해 주세요.');
+        if (isRecording) {
+          // Tap again to stop recording early
+          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+          }
           return;
         }
 
-        isEvaluated = false;
-        latestTranscript = '';
-        recognition = new SpeechRecognition();
-        recognition.lang = 'ko-KR';
-        recognition.continuous = true; // Stream continuously across phrases!
-        recognition.interimResults = true; // Syllable-by-syllable stream!
-        recognition.maxAlternatives = 1;
+        try {
+          audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (err) {
+          alert('🎤 마이크 권한을 허용해 주세요!');
+          return;
+        }
+
+        audioChunks = [];
+        isRecording = true;
+
+        let mimeType = 'audio/webm';
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mimeType = 'audio/webm;codecs=opus';
+        else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) mimeType = 'audio/ogg;codecs=opus';
+        else if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+
+        mediaRecorder = new MediaRecorder(audioStream, { mimeType });
 
         micBtn.classList.add('listening');
-        micBtn.disabled = true;
-        micBtn.textContent = '🎙️ 음성 듣는 중... (말씀하세요)';
-        statusBox.innerHTML = `🎙️ 마이크 연결 및 음성 엔진 준비 중...`;
+        micBtn.textContent = '⏹️ 말씀 완료 후 다시 클릭 (또는 3.5초 후 자동 완료)';
+        statusBox.innerHTML = `🎙️ 목소리를 듣고 있습니다... 한국어 뜻을 말씀해 주세요!`;
         statusBox.classList.add('active-speech');
 
-        // Real-time Web Audio Volume Meter Equalizer
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          try {
-            audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const analyser = audioCtx.createAnalyser();
-            const source = audioCtx.createMediaStreamSource(audioStream);
-            source.connect(analyser);
-            analyser.fftSize = 32;
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-            const updateVol = () => {
-              if (isEvaluated || !micBtn.classList.contains('listening')) return;
-              analyser.getByteFrequencyData(dataArray);
-              let sum = 0;
-              for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-              const avg = sum / dataArray.length;
-              const pct = Math.min(100, Math.round((avg / 128) * 100));
-
-              const barCount = Math.max(1, Math.ceil(pct / 16));
-              const bars = '▰'.repeat(barCount) + '▱'.repeat(6 - barCount);
-
-              if (!latestTranscript) {
-                micBtn.innerHTML = `🎙️ [${bars}] 음성 듣는 중... (말씀하세요)`;
-              } else {
-                micBtn.innerHTML = `🎙️ [${bars}] 실시간 수신 중...`;
-              }
-              requestAnimationFrame(updateVol);
-            };
-            updateVol();
-          } catch (err) {
-            console.warn('Web Audio Volume Meter Error:', err);
-          }
-        }
-
-        recognition.onstart = () => {
-          if (!latestTranscript) {
-            statusBox.innerHTML = `🎙️ 목소리를 듣고 있습니다... 한국어 뜻을 말씀해 주세요!`;
-          }
-          startSilenceTimer(8);
-        };
-
-        recognition.onspeechstart = () => {
-          startSilenceTimer(5);
-        };
-
-        recognition.onresult = (event) => {
-          let fullTranscript = '';
-
-          for (let i = 0; i < event.results.length; ++i) {
-            fullTranscript += event.results[i][0].transcript;
-          }
-
-          const currentText = fullTranscript.trim();
-
-          if (currentText) {
-            latestTranscript = currentText;
-            // STREAM LIVE SYLLABLES DIRECTLY INTO THE TEXT BOX!
-            statusBox.innerHTML = `💬 인식된 음성: <span class="speech-highlight">"${currentText}"</span>`;
-            statusBox.classList.add('active-speech');
-
-            // Reset silence timer on every spoken syllable chunk!
-            if (autoSubmitTimer) clearTimeout(autoSubmitTimer);
-            autoSubmitTimer = setTimeout(() => {
-              if (!isEvaluated && latestTranscript.trim()) {
-                submitVoiceVerdict(latestTranscript.trim());
-              }
-            }, 1400); // Auto-submit 1.4 seconds after user finishes speaking
-          }
-        };
-
-        recognition.onerror = (e) => {
-          if (e.error === 'no-speech') {
-            if (latestTranscript.trim() && !isEvaluated) {
-              submitVoiceVerdict(latestTranscript.trim());
-              return;
-            }
-            clearSilenceTimer();
-            stopAudioTracks();
-            micBtn.classList.remove('listening');
-            micBtn.disabled = false;
-            micBtn.textContent = '🎤 음성 다시 말하기';
-            statusBox.innerHTML = '⏱️ <strong style="color:var(--warning);">음성이 인식되지 않았습니다.</strong> 다시 말하기 버튼을 누르고 말씀해 주세요.';
-            statusBox.classList.remove('active-speech');
-          } else if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-            clearSilenceTimer();
-            stopAudioTracks();
-            micBtn.classList.remove('listening');
-            micBtn.disabled = false;
-            micBtn.textContent = '🎤 음성 다시 말하기';
-            statusBox.innerHTML = '⚠️ 마이크 권한 거부됨: 주소창 자물쇠/설정에서 마이크를 "허용"으로 전환해 주세요.';
-            statusBox.classList.remove('active-speech');
-          }
-        };
-
-        recognition.onend = () => {
-          if (!isEvaluated && latestTranscript.trim()) {
-            submitVoiceVerdict(latestTranscript.trim());
-          } else if (!isEvaluated) {
-            stopAudioTracks();
-            micBtn.classList.remove('listening');
-            micBtn.disabled = false;
-            micBtn.textContent = '🎤 음성 다시 말하기';
-            statusBox.classList.remove('active-speech');
-          }
-        };
-
+        // Web Audio Volume Equalizer Meter
         try {
-          recognition.start();
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const analyser = audioCtx.createAnalyser();
+          const source = audioCtx.createMediaStreamSource(audioStream);
+          source.connect(analyser);
+          analyser.fftSize = 32;
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+          const updateVol = () => {
+            if (!isRecording) return;
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+            const avg = sum / dataArray.length;
+            const pct = Math.min(100, Math.round((avg / 128) * 100));
+
+            const barCount = Math.max(1, Math.ceil(pct / 16));
+            const bars = '▰'.repeat(barCount) + '▱'.repeat(6 - barCount);
+
+            micBtn.innerHTML = `⏹️ [${bars}] 말씀 완료 후 클릭!`;
+            requestAnimationFrame(updateVol);
+          };
+          updateVol();
         } catch (err) {
-          clearSilenceTimer();
-          stopAudioTracks();
-          micBtn.classList.remove('listening');
-          micBtn.disabled = false;
-          micBtn.textContent = '🎤 음성 다시 말하기';
+          console.warn('Volume meter error:', err);
         }
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          isRecording = false;
+          stopRecordingTracks();
+
+          micBtn.disabled = true;
+          micBtn.textContent = '⏳ 구글 STT 변환 중...';
+          statusBox.innerHTML = `⏳ 음성 오디오를 구글 STT 서버로 전송하여 변환 중입니다...`;
+
+          const audioBlob = new Blob(audioChunks, { type: mimeType });
+          const formData = new FormData();
+          formData.append('audio', audioBlob, 'speech.webm');
+
+          try {
+            const res = await fetch('/api/stt', {
+              method: 'POST',
+              body: formData
+            });
+            const data = await res.json();
+
+            if (data.success && data.text) {
+              submitVoiceVerdict(data.text);
+            } else {
+              statusBox.innerHTML = `⚠️ ${data.error || '음성을 명확하게 인식하지 못했습니다'}. 다시 말씀해 주세요.`;
+              micBtn.disabled = false;
+              micBtn.classList.remove('listening');
+              micBtn.textContent = '🎤 음성 다시 말하기';
+            }
+          } catch (err) {
+            statusBox.innerHTML = `⚠️ 서버 연동 오류가 발생했습니다. 다시 시도해 주세요.`;
+            micBtn.disabled = false;
+            micBtn.classList.remove('listening');
+            micBtn.textContent = '🎤 음성 다시 말하기';
+          }
+        };
+
+        mediaRecorder.start();
+
+        // Auto stop after 3.5 seconds
+        recordTimer = setTimeout(() => {
+          if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+          }
+        }, 3500);
       });
     }
   } else {
