@@ -1,89 +1,72 @@
 /* ==========================================================================
-   Quiz Module - Part 5 Suffix Derivations, 4-Option Generator & Exception Handling
+   Quiz Module - Real TOEIC Practice Quiz, Part 5 Fill-in-Blank & Voice STT Quiz
    ========================================================================== */
 
 function setupQuiz() {
   const startBtn = document.getElementById('start-quiz-btn');
-  if (startBtn) startBtn.addEventListener('click', startQuiz);
-  
   const retryBtn = document.getElementById('quiz-retry-btn');
-  if (retryBtn) retryBtn.addEventListener('click', resetQuizSetup);
-
   const dashBtn = document.getElementById('quiz-dash-btn');
-  if (dashBtn) dashBtn.addEventListener('click', () => switchTab('dashboard'));
-}
 
-function startQuizMode(type) {
-  switchTab('quiz');
-  if (type) {
-    document.getElementById('quiz-type-select').value = type;
+  if (startBtn) {
+    startBtn.addEventListener('click', () => {
+      startQuiz();
+    });
+  }
+
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+      document.getElementById('quiz-result').classList.add('hidden');
+      document.getElementById('quiz-setup').classList.remove('hidden');
+    });
+  }
+
+  if (dashBtn) {
+    dashBtn.addEventListener('click', () => {
+      switchTab('dashboard');
+    });
   }
 }
 
-/**
- * Generate Smart Part 5 Suffix Derivations (e.g. available -> availability, availably, avail)
- * Exception Handling: Falls back cleanly to related words of distinct POS if suffix rules fail.
- */
-function generatePart5Choices(item) {
-  const correct = item.word.trim();
-  const lower = correct.toLowerCase();
-  const choicesSet = new Set([correct]);
+function generatePart5Choices(correctItem) {
+  const pos = correctItem.pos || '형용사';
+  const word = correctItem.word;
+  const choices = [word];
 
-  // Stem extraction helper
-  let stem = lower;
-  if (lower.endsWith('able')) stem = lower.slice(0, -4);
-  else if (lower.endsWith('ible')) stem = lower.slice(0, -4);
-  else if (lower.endsWith('ive')) stem = lower.slice(0, -3);
-  else if (lower.endsWith('al')) stem = lower.slice(0, -2);
-  else if (lower.endsWith('ful')) stem = lower.slice(0, -3);
-  else if (lower.endsWith('ous')) stem = lower.slice(0, -3);
-  else if (lower.endsWith('ent')) stem = lower.slice(0, -3);
-  else if (lower.endsWith('ant')) stem = lower.slice(0, -3);
-  else if (lower.endsWith('ly')) stem = lower.slice(0, -2);
+  if (pos.includes('형용사')) {
+    if (word.endsWith('able')) choices.push(word.replace(/able$/, 'ability'));
+    else if (word.endsWith('ive')) choices.push(word.replace(/ive$/, 'ion'));
+    else if (word.endsWith('ant')) choices.push(word.replace(/ant$/, 'ance'));
+    else if (word.endsWith('ent')) choices.push(word.replace(/ent$/, 'ence'));
+    else choices.push(word + 'ness');
 
-  // Attempt Rule-Based Derivations
-  if (item.pos === '형용사') {
-    choicesSet.add(lower + 'ly');
-    choicesSet.add(stem + 'ability');
-    choicesSet.add(stem + 'ness');
-    choicesSet.add(stem + 'tion');
-  } else if (item.pos === '부사') {
-    if (lower.endsWith('ly')) {
-      choicesSet.add(lower.slice(0, -2)); // adjective base
+    choices.push(word + 'ly');
+    choices.push(word + 's');
+  } else if (pos.includes('부사')) {
+    if (word.endsWith('ly')) {
+      const stem = word.slice(0, -2);
+      choices.push(stem);
+      choices.push(stem + 'ness');
+      choices.push(stem + 's');
+    } else {
+      choices.push(word + 'ful');
+      choices.push(word + 'ness');
+      choices.push(word + 'ing');
     }
-    choicesSet.add(stem + 'tion');
-    choicesSet.add(stem + 'ness');
-  } else if (item.pos === '명사') {
-    choicesSet.add(stem + 'able');
-    choicesSet.add(lower + 'ly');
-    choicesSet.add(stem + 'ize');
-  } else if (item.pos === '동사') {
-    choicesSet.add(stem + 'tion');
-    choicesSet.add(stem + 'able');
-    choicesSet.add(lower + 'ly');
+  } else if (pos.includes('전치사') || pos.includes('접속사')) {
+    const grammWords = ['because of', 'although', 'despite', 'however', 'provided that', 'during', 'while', 'unless'];
+    const others = grammWords.filter(w => w.toLowerCase() !== word.toLowerCase());
+    others.sort(() => 0.5 - Math.random());
+    choices.push(others[0], others[1], others[2]);
+  } else {
+    choices.push(word + 'ly', word + 'tion', word + 'ed');
   }
 
-  // Filter out any invalid / blank entries
-  let choicesList = Array.from(choicesSet).filter(c => c && c.trim().length > 1);
-
-  // Exception Fallback: Fill up to 4 choices using other words of distinct POS from state.allWords
-  if (choicesList.length < 4) {
-    const otherWords = state.allWords.filter(w => w.id !== item.id);
-    otherWords.sort(() => 0.5 - Math.random());
-
-    for (let w of otherWords) {
-      if (!choicesList.includes(w.word)) {
-        choicesList.push(w.word);
-      }
-      if (choicesList.length >= 4) break;
-    }
+  while (choices.length < 4) {
+    choices.push(word + '_' + choices.length);
   }
 
-  // Limit to 4 choices and shuffle
-  choicesList = choicesList.slice(0, 4);
-  choicesList.sort(() => 0.5 - Math.random());
-
-  return choicesList;
+  choices.sort(() => 0.5 - Math.random());
+  return choices;
 }
 
 function startQuiz() {
@@ -92,10 +75,10 @@ function startQuiz() {
   const prio = document.getElementById('quiz-prio-select').value;
 
   let pool = [...state.allWords];
-  
+
   if (type === 'wrong') {
-    if (!state.wrongWords.length) {
-      alert('오답 노트에 저장된 틀린 단어가 없습니다! 먼저 실전 퀴즈를 풀어보세요.');
+    if (!state.wrongWords || state.wrongWords.length === 0) {
+      alert('📌 오답 노트에 저장된 단어가 없습니다. 일반 퀴즈를 진행해 주세요!');
       return;
     }
     pool = [...state.wrongWords];
@@ -131,12 +114,16 @@ function startQuiz() {
       }
       correctAnswer = item.word;
       choices = generatePart5Choices(item);
+    } else if (type === 'voice') {
+      questionText = item.word;
+      questionSub = '🔊 영어 단어를 보고 한국어 뜻을 마이크로 말씀하세요';
+      correctAnswer = item.meaning;
     } else if (type === 'wrong') {
       questionText = item.word;
       correctAnswer = item.meaning;
     }
 
-    if (type !== 'blank') {
+    if (type !== 'blank' && type !== 'voice') {
       const otherWords = state.allWords.filter(w => w.id !== item.id);
       otherWords.sort(() => 0.5 - Math.random());
 
@@ -191,21 +178,122 @@ function renderQuizQuestion() {
   document.getElementById('q-question-sub').textContent = q.questionSub || '';
 
   const optionsContainer = document.getElementById('q-options-container');
-  optionsContainer.innerHTML = q.choices.map((choice, idx) => `
-    <button class="quiz-opt-btn" data-choice-idx="${idx}" data-choice-val="${choice.replace(/"/g, '&quot;')}">
-      (${String.fromCharCode(65 + idx)}) ${choice}
-    </button>
-  `).join('');
 
-  optionsContainer.querySelectorAll('.quiz-opt-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const choiceIdx = parseInt(btn.getAttribute('data-choice-idx'));
-      const choiceVal = btn.getAttribute('data-choice-val');
-      selectQuizAnswer(choiceIdx, choiceVal);
+  // Render Voice STT Mode
+  if (q.type === 'voice') {
+    optionsContainer.innerHTML = `
+      <div class="voice-mic-container" style="grid-column: 1 / -1;">
+        <button id="voice-start-btn" class="voice-mic-btn">
+          🎤 음성으로 정답 말하기 (터치)
+        </button>
+        <div id="voice-speech-status" class="voice-speech-box">
+          [🗣️ 마이크 버튼을 누르고 한국어 뜻을 편하게 말씀하세요]
+        </div>
+      </div>
+    `;
+
+    const micBtn = document.getElementById('voice-start-btn');
+    const statusBox = document.getElementById('voice-speech-status');
+
+    if (micBtn) {
+      micBtn.addEventListener('click', () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+          alert('현재 브라우저가 음성 인식을 지원하지 않습니다. Chrome 또는 Safari 최신 버전을 사용해 주세요.');
+          return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ko-KR';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        micBtn.classList.add('listening');
+        micBtn.disabled = true;
+        micBtn.textContent = '🎙️ 음성 듣는 중... (말씀하세요)';
+        statusBox.textContent = '🎙️ 목소리를 듣고 있습니다...';
+
+        recognition.onresult = (event) => {
+          micBtn.classList.remove('listening');
+          micBtn.disabled = false;
+          micBtn.textContent = '🎤 음성으로 다시 말하기';
+
+          const spokenText = event.results[0][0].transcript;
+          statusBox.textContent = `🗣️ 인식된 음성: "${spokenText}"`;
+
+          // Evaluate using Korean Fuzzy Matcher
+          const verdict = checkKoreanSemanticMatch(spokenText, q.item.meaning);
+          handleVoiceQuizVerdict(verdict, spokenText);
+        };
+
+        recognition.onerror = (e) => {
+          micBtn.classList.remove('listening');
+          micBtn.disabled = false;
+          micBtn.textContent = '🎤 음성으로 다시 말하기';
+          statusBox.textContent = '⚠️ 음성 인식 실패: 마이크 권한을 확인하고 다시 시도해 주세요.';
+        };
+
+        recognition.start();
+      });
+    }
+  } else {
+    // Render Standard Choice Options
+    optionsContainer.innerHTML = q.choices.map((choice, idx) => `
+      <button class="quiz-opt-btn" data-choice-idx="${idx}" data-choice-val="${choice.replace(/"/g, '&quot;')}">
+        (${String.fromCharCode(65 + idx)}) ${choice}
+      </button>
+    `).join('');
+
+    optionsContainer.querySelectorAll('.quiz-opt-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choiceIdx = parseInt(btn.getAttribute('data-choice-idx'));
+        const choiceVal = btn.getAttribute('data-choice-val');
+        selectQuizAnswer(choiceIdx, choiceVal);
+      });
     });
-  });
+  }
 
   document.getElementById('q-explanation-box').classList.add('hidden');
+}
+
+function handleVoiceQuizVerdict(verdict, spokenText) {
+  const q = state.quizQuestions[state.quizCurrentIdx];
+  const isCorrect = verdict.isMatch;
+
+  if (isCorrect) {
+    state.quizScore++;
+  } else {
+    state.wrongAnswers.push(q);
+  }
+
+  const expBox = document.getElementById('q-explanation-box');
+  const resultBadge = document.getElementById('q-result-badge');
+
+  if (isCorrect) {
+    resultBadge.innerHTML = `🎉 정답입니다! <span style="font-size:0.9rem; font-weight:600; color:var(--text-secondary);">(인식: "${spokenText}" ➔ 인정된 뜻: "${verdict.matchedMeaning}")</span>`;
+    resultBadge.style.color = 'var(--success)';
+  } else {
+    resultBadge.innerHTML = `❌ 아쉽네요! <span style="font-size:0.9rem; font-weight:600; color:var(--text-secondary);">(인식: "${spokenText}" / DB 정답: "${q.item.meaning}")</span>`;
+    resultBadge.style.color = 'var(--error)';
+  }
+
+  document.getElementById('exp-word').textContent = q.item.word;
+  document.getElementById('exp-meaning').textContent = q.item.meaning;
+  document.getElementById('exp-collocation').textContent = q.item.collocation || '기본 용례';
+  document.getElementById('exp-trap').textContent = q.item.trap_point || '품사 판단 유의';
+  document.getElementById('exp-example').textContent = q.item.example_en ? `${q.item.example_en} (${q.item.example_ko})` : '예문 없음';
+
+  expBox.classList.remove('hidden');
+
+  const nextBtn = document.getElementById('q-next-btn');
+  nextBtn.onclick = () => {
+    state.quizCurrentIdx++;
+    if (state.quizCurrentIdx < state.quizQuestions.length) {
+      renderQuizQuestion();
+    } else {
+      finishQuiz();
+    }
+  };
 }
 
 function selectQuizAnswer(choiceIdx, selectedAnswer) {
@@ -258,52 +346,45 @@ async function finishQuiz() {
   document.getElementById('quiz-result').classList.remove('hidden');
 
   const total = state.quizQuestions.length;
-  const percent = Math.round((state.quizScore / total) * 100);
+  const score = state.quizScore;
+  const percent = Math.round((score / total) * 100);
 
   document.getElementById('final-score-percent').textContent = `${percent}%`;
-  document.getElementById('final-correct-count').textContent = state.quizScore;
+  document.getElementById('final-correct-count').textContent = score;
   document.getElementById('final-total-count').textContent = total;
 
   const wrongSection = document.getElementById('wrong-answers-section');
   const wrongList = document.getElementById('wrong-list');
 
-  const wrongWordIds = state.wrongAnswers.map(w => w.item.id);
-
   if (state.wrongAnswers.length > 0) {
     wrongSection.classList.remove('hidden');
-    wrongList.innerHTML = state.wrongAnswers.map(w => `
-      <div class="vocab-card" style="margin-bottom:10px;">
-        <strong>${w.item.word}</strong>: ${w.item.meaning}
-        <div class="text-muted" style="font-size:0.8rem;">${w.item.collocation}</div>
+    wrongList.innerHTML = state.wrongAnswers.map(q => `
+      <div class="wrong-item">
+        <div><strong>${q.item.word}</strong> (${q.item.pos})</div>
+        <div>${q.item.meaning}</div>
       </div>
     `).join('');
   } else {
     wrongSection.classList.add('hidden');
   }
 
-  // Save Quiz Result to DB for active user
-  try {
-    const type = document.getElementById('quiz-type-select').value;
-    await fetch(`/api/users/${state.currentUserId}/quiz-results`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        quiz_type: type,
-        score: state.quizScore,
-        total: total,
-        wrong_word_ids: wrongWordIds
-      })
-    });
+  const type = document.getElementById('quiz-type-select').value;
+  const wrongWordIds = state.wrongAnswers.map(q => q.item.id);
 
-    await reloadUserWrongWords();
-    updateDashboard();
-  } catch (e) {
-    console.error('Failed to log quiz result to DB:', e);
+  if (navigator.onLine) {
+    try {
+      await fetch(`/api/users/${state.currentUserId}/quiz-results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quiz_type: type,
+          score: score,
+          total: total,
+          wrong_word_ids: wrongWordIds
+        })
+      });
+    } catch (e) {
+      console.warn('Network offline, quiz result not synced to backend.');
+    }
   }
-}
-
-function resetQuizSetup() {
-  document.getElementById('quiz-result').classList.add('hidden');
-  document.getElementById('quiz-active').classList.add('hidden');
-  document.getElementById('quiz-setup').classList.remove('hidden');
 }
