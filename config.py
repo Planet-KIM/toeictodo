@@ -1,8 +1,8 @@
 import os
 
 class Config:
-    PORT = 7071
-    HOST = '0.0.0.0'
+    PORT = int(os.environ.get('PORT', 5000))
+    HOST = os.environ.get('HOST', '127.0.0.1')
     DEBUG = True
     
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -13,5 +13,6 @@ class Config:
     # SSL Certificate Settings
     SSL_CERT = os.path.join(BASE_DIR, 'cert.pem')
     SSL_KEY = os.path.join(BASE_DIR, 'key.pem')
-    USE_SSL = os.path.exists(SSL_CERT) and os.path.exists(SSL_KEY)
+    USE_SSL = os.path.exists(SSL_CERT) and os.path.exists(SSL_KEY) and os.environ.get('DIRECT_FLASK_SSL', 'false').lower() == 'true'
+
 
