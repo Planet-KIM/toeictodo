@@ -302,14 +302,14 @@ def get_audio_preload_list():
 # --------------------------------------------------------------------------
 import os
 import tempfile
+import subprocess
 import speech_recognition as sr
-from pydub import AudioSegment
 
 @api_bp.route('/stt', methods=['POST'])
 def process_stt_audio():
     """
     Server-side STT API Endpoint.
-    Receives WebM/WAV audio blob from MediaRecorder, converts to WAV using ffmpeg,
+    Receives WebM/WAV audio blob from MediaRecorder, converts to 16kHz mono WAV using ffmpeg,
     and recognizes Korean speech using Google Speech API.
     """
     if 'audio' not in request.files:
@@ -324,8 +324,19 @@ def process_stt_audio():
     wav_path = webm_path + '.wav'
 
     try:
-        sound = AudioSegment.from_file(webm_path)
-        sound.export(wav_path, format='wav')
+        # Resample input audio (webm/mp4/ogg) to 16kHz mono WAV format for optimal STT accuracy
+        cmd = [
+            'ffmpeg', '-y',
+            '-i', webm_path,
+            '-ar', '16000',
+            '-ac', '1',
+            wav_path
+        ]
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        if res.returncode != 0:
+            logger.error(f"[ffmpeg Conversion Error] {res.stderr}")
+            return jsonify({'success': False, 'error': '음성 오디오 변환 중 오류가 발생했습니다. 다시 말씀해 주세요.'})
 
         r = sr.Recognizer()
         with sr.AudioFile(wav_path) as source:
@@ -337,11 +348,11 @@ def process_stt_audio():
     except sr.UnknownValueError:
         return jsonify({
             'success': False,
-            'error': '음성을 명확하게 인식하지 못했습니다. 다시 말씀해 주세요.'
+            'error': '음성을 명확하게 인식하지 못했습니다. 단어를 조금 더 또렷하게 말씀해 주세요.'
         })
     except Exception as e:
         logger.error(f"[Server-Side STT Error] {e}")
-        return jsonify({'success': False, 'error': f"STT Processing Error: {str(e)}"}), 500
+        return jsonify({'success': False, 'error': f"음성 처리 실패: {str(e)}"}), 500
     finally:
         if os.path.exists(webm_path):
             try: os.remove(webm_path)
@@ -349,4 +360,5 @@ def process_stt_audio():
         if os.path.exists(wav_path):
             try: os.remove(wav_path)
             except: pass
+
 
