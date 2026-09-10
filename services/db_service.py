@@ -97,6 +97,7 @@ class DbService:
         # Phase 5: High-Performance Database Indexes
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_words_pos_no ON words(pos, word_no);')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_words_priority ON words(priority);')
+        cursor.execute('CREATE INDEX IF NOT EXISTS idx_words_lower ON words(word);')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_user_progress_uid_wid ON user_progress(user_id, word_id);')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_quiz_logs_user_id ON user_quiz_logs(user_id);')
 

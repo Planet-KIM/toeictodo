@@ -124,6 +124,14 @@ function setupNavigation() {
     });
   });
 
+  const heroBtnDailyHabit = document.getElementById('hero-btn-daily-habit');
+  if (heroBtnDailyHabit) {
+    heroBtnDailyHabit.addEventListener('click', () => {
+      switchTab('flashcards');
+      initFlashcards('unlearned');
+    });
+  }
+
   const heroBtnVocabs = document.getElementById('hero-btn-vocabs');
   if (heroBtnVocabs) heroBtnVocabs.addEventListener('click', () => switchTab('vocabs'));
 

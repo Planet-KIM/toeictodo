@@ -1,6 +1,8 @@
 /* ==========================================================================
-   State Module - Application Global State & Persistent Data Management
+   State Module - Application Global State & Reactive Event Bus
    ========================================================================== */
+
+const _stateListeners = [];
 
 const state = {
   // Base Data
@@ -48,7 +50,17 @@ const state = {
   quizQuestions: [],
   quizCurrentIdx: 0,
   quizScore: 0,
-  wrongAnswers: []
+  wrongAnswers: [],
+
+  // Reactive State Bus Methods
+  subscribe(fn) {
+    if (typeof fn === 'function') _stateListeners.push(fn);
+  },
+  notify() {
+    _stateListeners.forEach(fn => {
+      try { fn(); } catch (e) { console.error('[State Bus Error]', e); }
+    });
+  }
 };
 
 function saveAccentPreference(accent) {
