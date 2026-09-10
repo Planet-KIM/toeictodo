@@ -293,7 +293,7 @@ function renderQuizQuestion() {
       });
     }
 
-    // Automatically Start Voice Recording & 5-Second Countdown Timer
+    // Automatically Start Voice Recording & 5-Second Countdown Timer + Real-time Speech Stream
     const startVoiceRecordingPipeline = async () => {
       try {
         audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -311,7 +311,7 @@ function renderQuizQuestion() {
 
       mediaRecorder = new MediaRecorder(audioStream, { mimeType });
 
-      // Real-time Audio Equalizer Vol Meter
+      // Real-time Web Audio Volume Equalizer Meter
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const analyser = audioCtx.createAnalyser();
@@ -335,13 +335,51 @@ function renderQuizQuestion() {
         updateVol();
       } catch (e) {}
 
+      // SIMULTANEOUS Client Web Speech Recognition for Syllable-by-Syllable Real-time Text Display
+      let speechRec = null;
+      let liveTextCaptured = '';
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          speechRec = new SpeechRecognition();
+          speechRec.lang = 'ko-KR';
+          speechRec.interimResults = true;
+          speechRec.continuous = true;
+
+          speechRec.onresult = (event) => {
+            let fullText = '';
+            for (let i = 0; i < event.results.length; ++i) {
+              fullText += event.results[i][0].transcript;
+            }
+            const currentLiveSpoken = fullText.trim();
+            if (currentLiveSpoken && !isEvaluated) {
+              liveTextCaptured = currentLiveSpoken;
+              if (unifiedInput) {
+                unifiedInput.value = currentLiveSpoken; // Stream spoken words LIVE into the text input!
+                unifiedInput.style.borderColor = '#fbbf24';
+              }
+            }
+          };
+          speechRec.start();
+        } catch (e) {}
+      }
+
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) audioChunks.push(event.data);
       };
 
       mediaRecorder.onstop = async () => {
+        if (speechRec) { try { speechRec.stop(); } catch(e){} }
         stopRecordingTracks();
         if (isEvaluated) return;
+
+        const timerBadge = document.getElementById('voice-timer-badge');
+        if (timerBadge) {
+          timerBadge.style.color = '#818cf8';
+          timerBadge.style.background = 'rgba(99, 102, 241, 0.2)';
+          timerBadge.style.borderColor = 'var(--accent-primary)';
+          timerBadge.innerHTML = `⏳ 구글 STT 변환 중... (잠시만 기다려주세요)`;
+        }
 
         if (unifiedInput) unifiedInput.placeholder = '⏳ 구글 STT 변환 중...';
 
@@ -355,13 +393,17 @@ function renderQuizQuestion() {
 
           if (data.success && data.text) {
             submitVoiceVerdict(data.text);
+          } else if (liveTextCaptured.trim()) {
+            submitVoiceVerdict(liveTextCaptured.trim());
           } else {
             if (!isEvaluated) {
               submitVoiceVerdict(''); // Empty speech -> counted as wrong & auto advance
             }
           }
         } catch (err) {
-          if (!isEvaluated) submitVoiceVerdict('');
+          if (!isEvaluated) {
+            submitVoiceVerdict(liveTextCaptured.trim() || '');
+          }
         }
       };
 
