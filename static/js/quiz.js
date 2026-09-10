@@ -8,8 +8,8 @@ function setupQuiz() {
   const dashBtn = document.getElementById('quiz-dash-btn');
 
   if (startBtn) {
-    startBtn.addEventListener('click', () => {
-      startQuiz();
+    startBtn.addEventListener('click', async () => {
+      await startQuiz();
     });
   }
 
@@ -24,6 +24,26 @@ function setupQuiz() {
     dashBtn.addEventListener('click', () => {
       switchTab('dashboard');
     });
+  }
+}
+
+/**
+ * Pre-checks and requests microphone permissions before starting Voice Quiz
+ */
+async function requestMicPermissionBeforeQuiz() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert('🎤 현재 브라우저 환경에서 마이크 권한 요청을 지원하지 않거나 보안 연결(HTTPS/Localhost)이 아닙니다.');
+    return false;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Stop all audio tracks immediately after successful permission check
+    stream.getTracks().forEach(track => track.stop());
+    return true;
+  } catch (err) {
+    alert('🎤 마이크 권한이 거부되어 음성 퀴즈를 진행할 수 없습니다.\n\n[권한 차단 해제 방법]\n브라우저 주소창 좌측 🔒(자물쇠) 또는 ⚙️ 설정 아이콘을 클릭하여 마이크 권한을 "허용"으로 변경하신 후 다시 시도해 주세요.');
+    return false;
   }
 }
 
@@ -69,10 +89,16 @@ function generatePart5Choices(correctItem) {
   return choices;
 }
 
-function startQuiz() {
+async function startQuiz() {
   const type = document.getElementById('quiz-type-select').value;
   const count = parseInt(document.getElementById('quiz-count-select').value);
   const prio = document.getElementById('quiz-prio-select').value;
+
+  // Check microphone permission beforehand if Voice Quiz is selected
+  if (type === 'voice') {
+    const hasMicPermission = await requestMicPermissionBeforeQuiz();
+    if (!hasMicPermission) return;
+  }
 
   let pool = [...state.allWords];
 
@@ -196,7 +222,7 @@ function renderQuizQuestion() {
     const statusBox = document.getElementById('voice-speech-status');
 
     if (micBtn) {
-      micBtn.addEventListener('click', () => {
+      micBtn.addEventListener('click', async () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
           alert('현재 브라우저가 음성 인식을 지원하지 않습니다. Chrome 또는 Safari 최신 버전을 사용해 주세요.');
@@ -226,11 +252,11 @@ function renderQuizQuestion() {
           handleVoiceQuizVerdict(verdict, spokenText);
         };
 
-        recognition.onerror = (e) => {
+        recognition.onerror = async (e) => {
           micBtn.classList.remove('listening');
           micBtn.disabled = false;
-          micBtn.textContent = '🎤 음성으로 다시 말하기';
-          statusBox.textContent = '⚠️ 음성 인식 실패: 마이크 권한을 확인하고 다시 시도해 주세요.';
+          micBtn.textContent = '🎤 음성 권한 재확인 및 다시 말하기';
+          statusBox.textContent = '⚠️ 음성 인식 실패: 브라우저 주소창 좌측 🔒 자물쇠 아이콘을 클릭하여 마이크 권한을 "허용"으로 설정해 주세요.';
         };
 
         recognition.start();
