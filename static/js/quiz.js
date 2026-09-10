@@ -102,7 +102,12 @@ function generatePart5Choices(correctItem) {
 async function startQuiz() {
   const type = document.getElementById('quiz-type-select').value;
   const count = parseInt(document.getElementById('quiz-count-select').value);
-  const prio = document.getElementById('quiz-prio-select').value;
+  const prioElem = document.getElementById('quiz-prio-select');
+  const prio = prioElem ? prioElem.value : 'all';
+
+  const timerElem = document.getElementById('quiz-timer-select');
+  const timerSec = timerElem ? parseInt(timerElem.value) : 5;
+  state.quizTimerSec = timerSec;
 
   // Check microphone permission beforehand if Voice Quiz is selected
   if (type === 'voice') {
@@ -217,25 +222,26 @@ function renderQuizQuestion() {
 
   // Render Voice STT Mode (Unified Input Box + 5s Auto-Countdown + Auto-Advance)
   if (q.type === 'voice') {
+    const timerSec = state.quizTimerSec || 5;
     optionsContainer.innerHTML = `
       <div class="voice-quiz-unified-card" style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:16px; align-items:center; width:100%; max-width:560px; margin:0 auto;">
         
-        <!-- 5-Second Countdown Timer Badge -->
+        <!-- Configurable Countdown Timer Badge (3초 ~ 15초) -->
         <div id="voice-timer-badge" class="voice-timer-badge" style="font-size:1.1rem; font-weight:800; color:#fbbf24; background:rgba(251,191,36,0.15); border:1.5px solid rgba(251,191,36,0.4); padding:8px 22px; border-radius:30px; display:flex; align-items:center; gap:8px;">
-          ⏱️ <span id="timer-sec-count">5</span>초 남음 (음성 수신 중)
+          ⏱️ <span id="timer-sec-count">${timerSec}</span>초 남음 (실시간 음성 수신 중)
         </div>
 
-        <!-- Unified Single Input Box (Combines Voice STT Text + Keyboard Input + Submit) -->
+        <!-- Unified Single Input Box (Combines Live Voice STT + Keyboard Input + Submit) -->
         <div class="unified-input-group" style="display:flex; gap:10px; width:100%; align-items:center;">
           <div style="position:relative; flex:1;">
-            <input type="text" id="unified-voice-text-input" class="search-box" style="width:100%; padding:14px 18px; font-size:1.1rem; font-weight:700; background:rgba(0,0,0,0.4); border:2px solid var(--accent-primary); color:var(--text-primary); border-radius:var(--radius-md); box-shadow:0 0 20px rgba(99, 102, 241, 0.3);" placeholder="🎙️ 말씀하세요... (또는 직접 입력)">
+            <input type="text" id="unified-voice-text-input" class="search-box" style="width:100%; padding:14px 18px; font-size:1.1rem; font-weight:700; background:rgba(0,0,0,0.4); border:2px solid var(--accent-primary); color:var(--text-primary); border-radius:var(--radius-md); box-shadow:0 0 20px rgba(99, 102, 241, 0.3);" placeholder="🎙️ 말씀하세요... (음성이 실시간으로 기록됩니다)">
             <span id="mic-vol-bar" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); font-size:0.85rem; color:#34d399; font-weight:800;">🎙️ [▰▰▰▰▱▱]</span>
           </div>
           <button id="btn-unified-submit" class="primary-btn lg" style="padding:14px 24px; white-space:nowrap; border-radius:var(--radius-md); font-weight:800;">제출</button>
         </div>
 
         <div style="font-size:0.85rem; color:var(--text-secondary); text-align:center;">
-          🔊 영어 단어를 보고 마이크로 한국어 뜻을 말씀해 주세요. (인식된 단어가 입력창에 채워집니다)
+          🔊 영어 단어를 보고 마이크로 한국어 뜻을 말씀해 주세요. (인식된 단어가 입력창에 실시간으로 채워집니다)
         </div>
 
       </div>
@@ -251,9 +257,15 @@ function renderQuizQuestion() {
     let audioStream = null;
     let countdownInterval = null;
     let isEvaluated = false;
-    let secondsLeft = 5;
+    let secondsLeft = timerSec;
+    let speechRec = null;
+    let liveTextCaptured = '';
 
     const stopRecordingTracks = () => {
+      if (speechRec) {
+        try { speechRec.stop(); } catch(e){}
+        speechRec = null;
+      }
       if (audioStream) {
         audioStream.getTracks().forEach(t => t.stop());
         audioStream = null;
@@ -293,8 +305,45 @@ function renderQuizQuestion() {
       });
     }
 
-    // Automatically Start Voice Recording & 5-Second Countdown Timer + Real-time Speech Stream
+    // Automatically Start Voice Recording & Countdown Timer + Real-time Syllable Stream
     const startVoiceRecordingPipeline = async () => {
+      // 1. Client Web Speech Recognition for Instant Real-Time Syllable Streaming
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          speechRec = new SpeechRecognition();
+          speechRec.lang = 'ko-KR';
+          speechRec.interimResults = true;
+          speechRec.continuous = true;
+          speechRec.maxAlternatives = 1;
+
+          speechRec.onresult = (event) => {
+            let fullText = '';
+            for (let i = 0; i < event.results.length; ++i) {
+              fullText += event.results[i][0].transcript;
+            }
+            const currentLiveSpoken = fullText.trim();
+            if (currentLiveSpoken && !isEvaluated) {
+              liveTextCaptured = currentLiveSpoken;
+              if (unifiedInput) {
+                unifiedInput.value = currentLiveSpoken; // STREAM LIVE SYLLABLES IMMEDIATELY!
+                unifiedInput.style.borderColor = '#fbbf24';
+                unifiedInput.style.boxShadow = '0 0 20px rgba(251, 191, 36, 0.5)';
+              }
+            }
+          };
+
+          speechRec.onerror = (err) => {
+            console.warn('SpeechRecognition error:', err.error);
+          };
+
+          speechRec.start();
+        } catch (e) {
+          console.warn('SpeechRecognition start failed:', e);
+        }
+      }
+
+      // 2. MediaRecorder Audio Capture for Server-Side Backup & Audio Meter
       try {
         audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch (err) {
@@ -335,44 +384,23 @@ function renderQuizQuestion() {
         updateVol();
       } catch (e) {}
 
-      // SIMULTANEOUS Client Web Speech Recognition for Syllable-by-Syllable Real-time Text Display
-      let speechRec = null;
-      let liveTextCaptured = '';
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        try {
-          speechRec = new SpeechRecognition();
-          speechRec.lang = 'ko-KR';
-          speechRec.interimResults = true;
-          speechRec.continuous = true;
-
-          speechRec.onresult = (event) => {
-            let fullText = '';
-            for (let i = 0; i < event.results.length; ++i) {
-              fullText += event.results[i][0].transcript;
-            }
-            const currentLiveSpoken = fullText.trim();
-            if (currentLiveSpoken && !isEvaluated) {
-              liveTextCaptured = currentLiveSpoken;
-              if (unifiedInput) {
-                unifiedInput.value = currentLiveSpoken; // Stream spoken words LIVE into the text input!
-                unifiedInput.style.borderColor = '#fbbf24';
-              }
-            }
-          };
-          speechRec.start();
-        } catch (e) {}
-      }
-
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) audioChunks.push(event.data);
       };
 
       mediaRecorder.onstop = async () => {
-        if (speechRec) { try { speechRec.stop(); } catch(e){} }
-        stopRecordingTracks();
         if (isEvaluated) return;
 
+        // IF REAL-TIME STT OR USER TYPING ALREADY HAS TEXT, SUBMIT INSTANTLY WITHOUT DELAY!
+        const currentInputVal = unifiedInput ? unifiedInput.value.trim() : '';
+        const textToSubmit = currentInputVal || liveTextCaptured.trim();
+
+        if (textToSubmit) {
+          submitVoiceVerdict(textToSubmit);
+          return;
+        }
+
+        // ONLY IF TEXT IS EMPTY, FALL BACK TO SERVER-SIDE GOOGLE STT UPLOAD
         const timerBadge = document.getElementById('voice-timer-badge');
         if (timerBadge) {
           timerBadge.style.color = '#818cf8';
@@ -393,24 +421,18 @@ function renderQuizQuestion() {
 
           if (data.success && data.text) {
             submitVoiceVerdict(data.text);
-          } else if (liveTextCaptured.trim()) {
-            submitVoiceVerdict(liveTextCaptured.trim());
           } else {
-            if (!isEvaluated) {
-              submitVoiceVerdict(''); // Empty speech -> counted as wrong & auto advance
-            }
+            submitVoiceVerdict(''); // Empty speech -> counted as wrong & auto advance
           }
         } catch (err) {
-          if (!isEvaluated) {
-            submitVoiceVerdict(liveTextCaptured.trim() || '');
-          }
+          submitVoiceVerdict('');
         }
       };
 
       mediaRecorder.start();
 
-      // Start 5-Second Visual Countdown
-      secondsLeft = 5;
+      // Start Countdown Timer with selected duration (3s ~ 15s)
+      secondsLeft = timerSec;
       if (timerBadgeCount) timerBadgeCount.textContent = secondsLeft;
 
       countdownInterval = setInterval(() => {
@@ -420,7 +442,13 @@ function renderQuizQuestion() {
         if (secondsLeft <= 0) {
           clearInterval(countdownInterval);
           countdownInterval = null;
-          if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+
+          // If text already exists when timer hits 0, submit immediately!
+          const curVal = unifiedInput ? unifiedInput.value.trim() : '';
+          const txt = curVal || liveTextCaptured.trim();
+          if (txt) {
+            submitVoiceVerdict(txt);
+          } else if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
           }
         }

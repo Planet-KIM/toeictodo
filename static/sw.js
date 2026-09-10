@@ -6,7 +6,7 @@
    TOEIC 750 Service Worker - Offline Caching Engine (PWA)
    ========================================================================== */
 
-const CACHE_NAME = 'toeic-750-v2';
+const CACHE_NAME = 'toeic-750-v3';
 const AUDIO_CACHE_NAME = 'toeic-audio-v1';
 
 const STATIC_ASSETS = [
@@ -34,7 +34,7 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing updated ServiceWorker toeic-750-v2...');
+  console.log('[SW] Installing updated ServiceWorker toeic-750-v3...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS).catch(err => {
@@ -46,7 +46,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating new ServiceWorker toeic-750-v2...');
+  console.log('[SW] Activating new ServiceWorker toeic-750-v3...');
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(

@@ -497,18 +497,20 @@
             </div>
 
             <div class="opt-group">
-              <label>대상 등급</label>
-              <select id="quiz-prio-select">
-                <option value="all">전체 (A+B+C)</option>
-                <option value="A">A 등급 (핵심 어휘)</option>
-                <option value="B">B 등급 (주요 어휘)</option>
-                <option value="C">C 등급 (완성 어휘)</option>
+              <label>⏱️ 음성 제한 시간 (3초~15초)</label>
+              <select id="quiz-timer-select">
+                <option value="3">3초 (빠른 스피드)</option>
+                <option value="5" selected>5초 (기본 밸런스)</option>
+                <option value="8">8초 (여유있게)</option>
+                <option value="10">10초 (충분하게)</option>
+                <option value="15">15초 (최대 시간)</option>
               </select>
             </div>
           </div>
 
           <button id="start-quiz-btn" class="primary-btn lg">퀴즈 시작 🚀</button>
         </div>
+
 
         <!-- Active Quiz Box -->
         <div id="quiz-active" class="quiz-box hidden">
@@ -701,20 +703,21 @@
     </div>
   </div>
 
-  <!-- Modular JS Files -->
-  <script src="js/state.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/offlineDb.js"></script>
-  <script src="js/dashboard.js"></script>
-  <script src="js/vocabs.js"></script>
-  <script src="js/autoPlayer.js"></script>
-  <script src="js/flashcards.js"></script>
-  <script src="js/koreanFuzzyMatcher.js"></script>
-  <script src="js/quiz.js"></script>
-  <script src="js/modal.js"></script>
-  <script src="js/wordCrudModal.js"></script>
-  <script src="js/mindmap.js"></script>
-  <script src="js/main.js"></script>
+  <!-- Modular JS Files with Cache Busting -->
+  <script src="js/state.js?v=20260910_06"></script>
+  <script src="js/audio.js?v=20260910_06"></script>
+  <script src="js/auth.js?v=20260910_06"></script>
+  <script src="js/offlineDb.js?v=20260910_06"></script>
+  <script src="js/dashboard.js?v=20260910_06"></script>
+  <script src="js/vocabs.js?v=20260910_06"></script>
+  <script src="js/autoPlayer.js?v=20260910_06"></script>
+  <script src="js/flashcards.js?v=20260910_06"></script>
+  <script src="js/koreanFuzzyMatcher.js?v=20260910_06"></script>
+  <script src="js/quiz.js?v=20260910_06"></script>
+  <script src="js/modal.js?v=20260910_06"></script>
+  <script src="js/wordCrudModal.js?v=20260910_06"></script>
+  <script src="js/mindmap.js?v=20260910_06"></script>
+  <script src="js/main.js?v=20260910_06"></script>
 </body>
 </html>
+
