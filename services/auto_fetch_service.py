@@ -71,17 +71,41 @@ class AutoFetchService:
         word_lower = word.strip().lower()
         logger.info(f"[AutoFetch] Fetching word details for '{word_lower}'...")
 
+        # 0. Check Local Database First for 100% Curated TOEIC Accuracy & Instant Response
+        try:
+            from services.db_service import DbService
+            words = DbService.get_words()
+            matched = next((w for w in words if w.get('word', '').strip().lower() == word_lower), None)
+            if matched:
+                logger.info(f"[AutoFetch] Found exact match in local DB for '{word_lower}'")
+                raw_m = matched.get('meaning', '')
+                meanings = [m.strip() for m in re.split(r'[,;/]', raw_m) if m.strip()]
+                return {
+                    'word': matched.get('word'),
+                    'pos': matched.get('pos', '형용사'),
+                    'meaning': raw_m,
+                    'meaning_options': meanings,
+                    'priority': matched.get('priority', 'A'),
+                    'topic': matched.get('topic', '일반 업무'),
+                    'collocation': matched.get('collocation', ''),
+                    'trap_point': matched.get('trap_point', ''),
+                    'example_en': matched.get('example_en', ''),
+                    'example_ko': matched.get('example_ko', '')
+                }
+        except Exception as e:
+            logger.warning(f"[AutoFetch] Local DB priority check error: {e}")
+
         meaning = ""
         example_en = ""
         example_ko = ""
         found_pos_list = []
         raw_meaning_options = []
 
-        # 1. Fetch Meaning & Korean Meaning Options via MyMemory Translation API
+        # 1. Fetch Meaning & Korean Meaning Options via MyMemory Translation API (2s timeout)
         try:
             url = f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(word_lower)}&langpair=en|ko"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as r:
+            with urllib.request.urlopen(req, timeout=2) as r:
                 data = json.loads(r.read().decode('utf-8'))
                 translated = data.get('responseData', {}).get('translatedText', '')
                 if translated and is_korean_text(translated) and translated.lower() != word_lower:
@@ -93,11 +117,11 @@ class AutoFetchService:
         except Exception as e:
             logger.warning(f"[AutoFetch] MyMemory translation error for '{word_lower}': {e}")
 
-        # 2. Fetch Multi-POS & Definitions via Datamuse API
+        # 2. Fetch Multi-POS & Definitions via Datamuse API (2s timeout)
         try:
             url = f"https://api.datamuse.com/words?sp={urllib.parse.quote(word_lower)}&md=dp"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as r:
+            with urllib.request.urlopen(req, timeout=2) as r:
                 data = json.loads(r.read().decode('utf-8'))
                 if data:
                     item = data[0]
@@ -115,11 +139,11 @@ class AutoFetchService:
         except Exception as e:
             logger.warning(f"[AutoFetch] Datamuse error for '{word_lower}': {e}")
 
-        # 3. Fetch Real Example Sentence & Additional POS via FreeDictionary API
+        # 3. Fetch Real Example Sentence via FreeDictionary API (2s timeout)
         try:
             url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{urllib.parse.quote(word_lower)}"
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as r:
+            with urllib.request.urlopen(req, timeout=2) as r:
                 data = json.loads(r.read().decode('utf-8'))
                 if data and isinstance(data, list):
                     for m in data[0].get('meanings', []):
