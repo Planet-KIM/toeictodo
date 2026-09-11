@@ -67,13 +67,134 @@ def is_korean_text(text):
         return False
     return bool(re.search(r'[\uac00-\ud7a3]', text))
 
+KNOWN_PHRASES = {
+    'in that': {
+        'pos': '접속사',
+        'meaning': '~라는 점에서, ~이기 때문에',
+        'priority': 'A',
+        'topic': '이유·측면',
+        'collocation': 'in that + S + V (이유·측면 접속사)',
+        'trap_point': 'in that절은 주어+동사(S+V) 절을 이끄는 복합 접속사. (전치사 in + 명사와 구분)',
+        'example_en': 'The new system is advantageous in that it significantly reduces processing time.',
+        'example_ko': '새 시스템은 처리 시간을 크게 줄여준다는 점에서 유리합니다.'
+    },
+    'now that': {
+        'pos': '접속사',
+        'meaning': '이제 ~이므로, ~이니까',
+        'priority': 'A',
+        'topic': '이유·시간',
+        'collocation': 'now that + S + V',
+        'trap_point': '이유 접속사 (because, since와 유사).',
+        'example_en': 'Now that the project is completed, the team can focus on the next phase.',
+        'example_ko': '이제 프로젝트가 완료되었으므로 팀은 다음 단계에 집중할 수 있습니다.'
+    },
+    'provided that': {
+        'pos': '접속사',
+        'meaning': '~라는 조건에서, ~하기만 하면',
+        'priority': 'A',
+        'topic': '조건',
+        'collocation': 'provided that + S + V',
+        'trap_point': '조건 접속사 (if와 유사).',
+        'example_en': 'Employees may work remotely provided that they complete their daily tasks.',
+        'example_ko': '일일 업무를 완료한다는 조건하에 직원들은 원격 근무를 할 수 있습니다.'
+    },
+    'providing that': {
+        'pos': '접속사',
+        'meaning': '~라는 조건에서, ~하기만 하면',
+        'priority': 'A',
+        'topic': '조건',
+        'collocation': 'providing that + S + V',
+        'trap_point': '조건 접속사 (if와 유사).',
+        'example_en': 'The event will be held outdoors providing that it does not rain.',
+        'example_ko': '비가 오지 않는다는 조건하에 행사는 야외에서 열릴 것입니다.'
+    },
+    'assuming that': {
+        'pos': '접속사',
+        'meaning': '~라고 가정하면',
+        'priority': 'C',
+        'topic': '조건',
+        'collocation': 'assuming that + S + V',
+        'trap_point': '가정적 조건 접속사.',
+        'example_en': 'Assuming that the proposal is approved, construction will begin in May.',
+        'example_ko': '제안서가 승인된다고 가정하면 5월에 공사가 시작될 것입니다.'
+    },
+    'considering that': {
+        'pos': '접속사, 전치사',
+        'meaning': '~임을 고려하면, ~이므로',
+        'priority': 'B',
+        'topic': '이유·고려',
+        'collocation': 'considering that + S + V',
+        'trap_point': 'considering(전치사+명사) vs considering that(접속사+절) 구분.',
+        'example_en': 'Considering that he is new to the team, he performed exceptionally well.',
+        'example_ko': '그가 팀에 신입임을 고려하면 그는 예외적으로 일을 잘했습니다.'
+    },
+    'given that': {
+        'pos': '접속사',
+        'meaning': '~임을 감안할 때, ~를 고려하면',
+        'priority': 'B',
+        'topic': '이유·고려',
+        'collocation': 'given that + S + V',
+        'trap_point': 'given(전치사) vs given that(접속사).',
+        'example_en': 'Given that sales are rising, we expect higher annual profits.',
+        'example_ko': '매출이 상승하고 있음을 감안할 때 더 높은 연간 수익을 기대합니다.'
+    },
+    'so that': {
+        'pos': '접속사',
+        'meaning': '~하도록, ~하기 위하여',
+        'priority': 'A',
+        'topic': '목적',
+        'collocation': 'so that + S + can/may + V',
+        'trap_point': '목적 접속사 (뒤에 조동사 can/may/will 동반).',
+        'example_en': 'Please submit the report early so that the committee can review it.',
+        'example_ko': '위원회가 검토할 수 있도록 보고서를 일찍 제출해 주세요.'
+    },
+    'in order that': {
+        'pos': '접속사',
+        'meaning': '~하기 위하여, ~하도록',
+        'priority': 'B',
+        'topic': '목적',
+        'collocation': 'in order that + S + can/may + V',
+        'trap_point': '목적 접속사구.',
+        'example_en': 'The manager extended the deadline in order that all members could participate.',
+        'example_ko': '모든 구성원이 참여할 수 있도록 관리자가 마감 시한을 연장했습니다.'
+    },
+    'except that': {
+        'pos': '접속사',
+        'meaning': '~라는 점만 제외하면',
+        'priority': 'C',
+        'topic': '제외',
+        'collocation': 'except that + S + V',
+        'trap_point': 'except(전치사) vs except that(접속사) 자리 구분.',
+        'example_en': 'The vehicle is in perfect condition except that the battery needs replacement.',
+        'example_ko': '배터리 교체가 필요하다는 점만 제외하면 차량 상태는 완벽합니다.'
+    },
+}
+
 class AutoFetchService:
     @classmethod
     def fetch_word_details(cls, word):
         word_lower = word.strip().lower()
         logger.info(f"[AutoFetch] Fetching word details for '{word_lower}'...")
 
-        # 0. Check Local Database First for 100% Curated TOEIC Accuracy & Instant Response
+        # 0-A. Check Known TOEIC Compound Phrases (in that, now that, provided that, etc.)
+        if word_lower in KNOWN_PHRASES:
+            logger.info(f"[AutoFetch] Matched KNOWN_PHRASES dictionary for '{word_lower}'")
+            kp = KNOWN_PHRASES[word_lower]
+            meanings = [m.strip() for m in re.split(r'[,;/]', kp['meaning']) if m.strip()]
+            return {
+                'word': word,
+                'pos': kp['pos'],
+                'meaning': kp['meaning'],
+                'meaning_options': meanings,
+                'priority': kp.get('priority', 'A'),
+                'topic': kp.get('topic', '일반 업무'),
+                'collocation': kp.get('collocation', ''),
+                'trap_point': kp.get('trap_point', ''),
+                'example_en': kp.get('example_en', ''),
+                'example_ko': kp.get('example_ko', '')
+            }
+
+        # 0-B. Check Local Database First for 100% Curated TOEIC Accuracy & Instant Response
         try:
             from services.db_service import DbService
             words = DbService.get_words()
@@ -161,10 +282,10 @@ class AutoFetchService:
         except Exception as e:
             logger.warning(f"[AutoFetch] FreeDict error for '{word_lower}': {e}")
 
-        # Smart POS fallback if external dictionary APIs returned no POS tags
-        if not found_pos_list:
-            if ' ' in word_lower or any(word_lower.startswith(p) for p in ['as ', 'in ', 'by ', 'with ', 'for ', 'due ', 'owing ', 'according ', 'prior ', 'so ']):
-                found_pos_list = ["전치사", "접속사"]
+        # Smart POS fallback if external dictionary APIs returned no POS tags or wrong POS tags
+        if not found_pos_list or word_lower.endswith(' that') or ' ' in word_lower:
+            if word_lower.endswith(' that') or ' ' in word_lower or any(word_lower.startswith(p) for p in ['as ', 'in ', 'by ', 'with ', 'for ', 'due ', 'owing ', 'according ', 'prior ', 'so ']):
+                found_pos_list = ["접속사"]
             elif word_lower.endswith('ly'):
                 found_pos_list = ["부사"]
             elif word_lower.endswith(('tion', 'ment', 'ness', 'ity', 'ance', 'ence', 'ship', 'er', 'or')):
