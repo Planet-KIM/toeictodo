@@ -43,6 +43,8 @@ TOEIC_COLLOCATIONS = {
     'prior': 'prior to + N',
     'preceding': 'preceding + N',
     'convenient': 'be convenient for / to',
+    'as soon as': 'as soon as + S + V (~하자마자)',
+    'as well as': 'A as well as B (~뿐만 아니라)',
 }
 
 TAG_MAP = {
