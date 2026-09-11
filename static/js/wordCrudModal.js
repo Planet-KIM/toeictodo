@@ -31,9 +31,9 @@ function setupWordCrudModal() {
     });
   }
 
-  // 🔍 Auto-Fetch Button Click Handler with Multi-POS & Multi-Meaning Support
+  // 🔍 Auto-Fetch Button & Enter Key Handler with Visual Loading State
   if (autoFetchBtn && wordInput) {
-    autoFetchBtn.addEventListener('click', async () => {
+    const handleAutoFetch = async () => {
       const word = wordInput.value.trim();
       if (!word) {
         alert('영어 단어를 먼저 입력해 주세요.');
@@ -41,8 +41,11 @@ function setupWordCrudModal() {
       }
 
       autoFetchBtn.disabled = true;
-      const origText = autoFetchBtn.textContent;
-      autoFetchBtn.textContent = '🔍 검색 중...';
+      const origText = autoFetchBtn.innerHTML;
+      autoFetchBtn.innerHTML = '⏳ 예문·뜻 검색 중...';
+      autoFetchBtn.style.opacity = '0.85';
+      wordInput.style.borderColor = '#fbbf24';
+      wordInput.style.boxShadow = '0 0 18px rgba(251, 191, 36, 0.5)';
 
       try {
         const res = await fetch(`/api/words/auto-fetch?word=${encodeURIComponent(word)}`);
@@ -82,15 +85,37 @@ function setupWordCrudModal() {
               chipsContainer.appendChild(chip);
             });
           }
+
+          wordInput.style.borderColor = '#34d399';
+          wordInput.style.boxShadow = '0 0 18px rgba(52, 211, 153, 0.5)';
         } else {
           alert('자동 예문 검색 실패: 직접 입력해 주세요.');
+          wordInput.style.borderColor = '';
+          wordInput.style.boxShadow = '';
         }
       } catch (e) {
         console.error('Auto fetch error:', e);
         alert('자동 예문 파싱 실패. 직접 입력해 주세요.');
+        wordInput.style.borderColor = '';
+        wordInput.style.boxShadow = '';
       } finally {
         autoFetchBtn.disabled = false;
-        autoFetchBtn.textContent = origText;
+        autoFetchBtn.innerHTML = origText;
+        autoFetchBtn.style.opacity = '1.0';
+        setTimeout(() => {
+          wordInput.style.borderColor = '';
+          wordInput.style.boxShadow = '';
+        }, 1500);
+      }
+    };
+
+    autoFetchBtn.addEventListener('click', handleAutoFetch);
+
+    // Enter Key Search Handler in Word Input
+    wordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleAutoFetch();
       }
     });
   }

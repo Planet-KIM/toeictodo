@@ -6,7 +6,7 @@
    TOEIC 750 Service Worker - Offline Caching Engine (PWA)
    ========================================================================== */
 
-const CACHE_NAME = 'toeic-750-v4';
+const CACHE_NAME = 'toeic-750-v5';
 const AUDIO_CACHE_NAME = 'toeic-audio-v1';
 
 const STATIC_ASSETS = [
