@@ -147,8 +147,29 @@ function setupWordCrudModal() {
           if (modal) modal.classList.add('hidden');
           
           await loadData();
+
+          // Instant UI Update: Auto-fill search input with the new word & reset filter constraints
+          const searchInput = document.getElementById('search-input');
+          const searchClear = document.getElementById('search-clear');
+          if (searchInput) {
+            searchInput.value = word;
+            state.searchQuery = word.toLowerCase().trim();
+            if (searchClear) searchClear.style.display = 'block';
+          }
+
+          state.currentPosFilter = 'all';
+          state.currentPrioFilter = 'all';
+          state.currentStatusFilter = 'all';
+          state.alphabetFilter = 'all';
+          state.currentPage = 1;
+
           updateDashboard();
           renderVocabs();
+
+          // Ensure vocabs tab is active so the newly listed word is immediately visible
+          if (typeof switchTab === 'function') {
+            switchTab('vocabs');
+          }
         } else {
           alert(data.error || '저장 실패');
         }
