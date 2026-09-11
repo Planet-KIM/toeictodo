@@ -161,34 +161,41 @@ class AutoFetchService:
         except Exception as e:
             logger.warning(f"[AutoFetch] FreeDict error for '{word_lower}': {e}")
 
-        # Default POS fallback
+        # Smart POS fallback if external dictionary APIs returned no POS tags
         if not found_pos_list:
-            found_pos_list = ["형용사"]
+            if ' ' in word_lower or any(word_lower.startswith(p) for p in ['as ', 'in ', 'by ', 'with ', 'for ', 'due ', 'owing ', 'according ', 'prior ', 'so ']):
+                found_pos_list = ["전치사", "접속사"]
+            elif word_lower.endswith('ly'):
+                found_pos_list = ["부사"]
+            elif word_lower.endswith(('tion', 'ment', 'ness', 'ity', 'ance', 'ence', 'ship', 'er', 'or')):
+                found_pos_list = ["명사"]
+            else:
+                found_pos_list = ["형용사"]
 
         pos_str = ", ".join(found_pos_list)
 
         # Fallback Example Sentence if DictionaryAPI has no example
         if not example_en:
             first_pos = found_pos_list[0]
-            if "형용사" in first_pos:
-                example_en = f"The new strategy proved to be highly {word_lower} in improving overall productivity."
-                example_ko = f"새로운 전략은 전체적인 생산성을 향상시키는 데 매우 효과적인 것으로 입증되었습니다."
+            if "접속사" in first_pos or "전치사" in first_pos:
+                example_en = f"Please process the application {word_lower} the team completes the final review."
+                example_ko = f"팀이 최종 검토를 완료하는 대로 신청서를 처리해 주세요."
             elif "부사" in first_pos:
                 example_en = f"The manager {word_lower} reviewed all pending budget proposals."
-                example_ko = f"관리자는 대기 중인 모든 예산 안안을 검토했습니다."
-            elif "전치사" in first_pos or "접속사" in first_pos:
-                example_en = f"Please process the application {word_lower} the deadline expires."
-                example_ko = f"마감 시한이 만료되기 전에 신청서를 처리해 주세요."
+                example_ko = f"관리자는 대기 중인 모든 예산 안을 검토했습니다."
+            elif "명사" in first_pos:
+                example_en = f"The company announced a new {word_lower} to support employee development."
+                example_ko = f"회사는 직원 개발을 지원하기 위한 새로운 안건을 발표했습니다."
             else:
-                example_en = f"The team presented a {word_lower} solution during the executive meeting."
-                example_ko = f"팀은 임원 회의에서 해결책을 제시했습니다."
+                example_en = f"The new strategy proved to be highly effective in improving overall productivity."
+                example_ko = f"새로운 전략은 전체적인 생산성을 향상시키는 데 매우 효과적인 것으로 입증되었습니다."
 
         # Translate Example Sentence to Korean if missing
         if example_en and not example_ko:
             try:
                 url = f"https://api.mymemory.translated.net/get?q={urllib.parse.quote(example_en)}&langpair=en|ko"
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req, timeout=5) as r:
+                with urllib.request.urlopen(req, timeout=2) as r:
                     data = json.loads(r.read().decode('utf-8'))
                     translated = data.get('responseData', {}).get('translatedText', '')
                     if translated:
@@ -197,21 +204,28 @@ class AutoFetchService:
                 logger.warning(f"[AutoFetch] Example translation error for '{word_lower}': {e}")
                 example_ko = "해당 예문의 한국어 해석을 확인해 주세요."
 
-        # Fetch TOEIC Collocation from preset map
+        # Fetch TOEIC Collocation from preset map or POS-based template
         collocation = TOEIC_COLLOCATIONS.get(word_lower, "")
         if not collocation:
-            if "형용사" in pos_str:
-                collocation = f"be {word_lower} for / to"
+            if "접속사" in pos_str:
+                collocation = f"{word_lower} + S + V (주어+동사 절 결합)"
+            elif "전치사" in pos_str:
+                collocation = f"{word_lower} + N / -ing (명사/동명사 목적어 결합)"
             elif "부사" in pos_str:
                 collocation = f"{word_lower} + 동사/형용사 수식"
-            elif "전치사" in pos_str:
-                collocation = f"{word_lower} + N/ing"
-            elif "접속사" in pos_str:
-                collocation = f"{word_lower} + S+V"
+            elif "형용사" in pos_str:
+                collocation = f"be {word_lower} for / to"
             else:
                 collocation = f"{word_lower} + N"
 
-        trap_point = f"명사 앞 수식 또는 연결동사 뒤 {pos_str} 자리 구분"
+        if "접속사" in pos_str or "전치사" in pos_str:
+            trap_point = f"접속사(뒤에 절 S+V) vs 전치사(뒤에 명사/동명사) 수식 자리를 정확히 구분"
+        elif "부사" in pos_str:
+            trap_point = f"동사·형용사·다른 부사 또는 문장 전체를 수식하는 자리 확인"
+        elif "명사" in pos_str:
+            trap_point = f"가산명사/불가산명사 구분 및 관사·소유격 뒤 명사 자리 확인"
+        else:
+            trap_point = f"명사 앞 수식 또는 연결동사 뒤 형용사 자리 구분"
         priority = 'A' if word_lower in TOEIC_COLLOCATIONS or len(word_lower) <= 7 else 'B'
 
         # Filter meaning_options to ONLY contain Korean text
